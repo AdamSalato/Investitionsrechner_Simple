@@ -1,0 +1,1891 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Investitionsrechner</title>
+<meta name="description" content="Wirtschaftlichkeits- und Investitionsrechnung: statische, dynamische und wertorientierte Verfahren mit Diagrammen sowie Export als PDF, TXT und CSV.">
+<style>
+:root{
+  --bg:#f3f4f6; --panel:#ffffff; --panel-2:#f9fafb; --ink:#111827; --ink-2:#374151; --ink-3:#6b7280;
+  --line:#e5e7eb; --line-2:#d1d5db; --accent:#1d4ed8; --accent-ink:#ffffff; --accent-weak:#e8eefc;
+  --pos:#15803d; --pos-weak:#e8f6ed; --neg:#b91c1c; --neg-weak:#fdeded; --warn:#92400e; --warn-weak:#fdf6e7;
+  --c1:#2563eb; --c2:#ea580c; --c3:#16a34a; --grid:#eceef1; --axis:#9ca3af;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --panel:#181b21; --panel-2:#1e2229; --ink:#e8eaed; --ink-2:#c3c8cf; --ink-3:#8d95a1;
+    --line:#2a2f37; --line-2:#3a414b; --accent:#7ba2ff; --accent-ink:#0f1115; --accent-weak:#1c2740;
+    --pos:#4ade80; --pos-weak:#14281c; --neg:#f87171; --neg-weak:#2e1818; --warn:#fbbf24; --warn-weak:#2c2412;
+    --c1:#60a5fa; --c2:#fb923c; --c3:#4ade80; --grid:#242931; --axis:#5c6571; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --panel:#181b21; --panel-2:#1e2229; --ink:#e8eaed; --ink-2:#c3c8cf; --ink-3:#8d95a1;
+  --line:#2a2f37; --line-2:#3a414b; --accent:#7ba2ff; --accent-ink:#0f1115; --accent-weak:#1c2740;
+  --pos:#4ade80; --pos-weak:#14281c; --neg:#f87171; --neg-weak:#2e1818; --warn:#fbbf24; --warn-weak:#2c2412;
+  --c1:#60a5fa; --c2:#fb923c; --c3:#4ade80; --grid:#242931; --axis:#5c6571; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{margin:0;line-height:1.25}
+
+/* ---------- Kopfzeile ---------- */
+.top{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px}
+.top-row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;max-width:1700px;margin:0 auto}
+.brand{display:flex;flex-direction:column;margin-right:auto;min-width:200px}
+.brand h1{font-size:17px;font-weight:650;letter-spacing:-.01em}
+.brand span{font-size:12px;color:var(--ink-3)}
+.ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ctl label{font-size:12px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+select,input[type=text]{background:var(--panel);border:1px solid var(--line-2);border-radius:6px;padding:6px 8px;min-height:34px}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#methode{min-width:min(360px,80vw)}
+#vorlage{max-width:min(320px,70vw)}
+.btn{border:1px solid var(--line-2);background:var(--panel);border-radius:6px;padding:6px 11px;min-height:34px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{min-height:28px;padding:3px 9px;font-size:12.5px}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.sep{width:1px;height:26px;background:var(--line)}
+
+/* ---------- Layout ---------- */
+.layout{display:grid;grid-template-columns:minmax(330px,430px) minmax(0,1fr);gap:16px;max-width:1700px;margin:0 auto;padding:16px}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)} .sep{display:none}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+
+/* ---------- Eingaben ---------- */
+.inputs{position:sticky;top:76px;max-height:calc(100vh - 92px);display:flex;flex-direction:column;overflow:hidden}
+@media (max-width:980px){.inputs{position:static;max-height:none}}
+@media (max-width:640px){.top{position:static}.f{grid-template-columns:minmax(0,1fr) 92px 34px 18px}.ctl{width:100%}#methode,#vorlage{flex:1;min-width:0;max-width:none}.layout{padding:12px}.report{padding:14px}}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{flex:1 0 auto;border:0;background:none;padding:10px 12px;cursor:pointer;color:var(--ink-3);font-weight:600;font-size:13px;border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;justify-content:center}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.tab.off{opacity:.55}
+.tabpanes{overflow-y:auto;padding:12px 14px 18px}
+.pane[hidden]{display:none}
+fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:8px 12px 10px}
+legend{font-weight:650;font-size:12.5px;padding:0 4px;color:var(--ink-2)}
+.f{display:grid;grid-template-columns:minmax(0,1fr) 120px 46px 18px;gap:6px;align-items:center;margin:5px 0}
+.f > span.l{font-size:13px;color:var(--ink-2)}
+.f input{width:100%;text-align:right;padding:5px 7px;min-height:30px}
+.f input.err{border-color:var(--neg);background:var(--neg-weak)}
+.f .u{font-size:12px;color:var(--ink-3)}
+.wide{display:grid;grid-template-columns:minmax(0,1fr) 2fr;gap:6px;align-items:center;margin:5px 0}
+.wide span{font-size:13px;color:var(--ink-2)}
+.wide input,.wide select{width:100%;min-height:30px;padding:5px 7px}
+.preset{width:100%;margin:2px 0 6px;font-size:12.5px;min-height:30px;padding:4px 6px;color:var(--ink-2)}
+.radio{display:flex;align-items:center;gap:7px;font-size:13px;margin:4px 0;cursor:pointer;color:var(--ink-2)}
+.info{position:relative;display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid var(--line-2);color:var(--ink-3);font-size:10.5px;font-weight:700;align-items:center;justify-content:center;cursor:help;font-style:normal;user-select:none}
+.info:hover,.info:focus{border-color:var(--accent);color:var(--accent)}
+.info .tip{display:none;position:absolute;right:-4px;top:22px;width:280px;background:var(--ink);color:var(--panel);font-weight:400;font-size:12px;line-height:1.4;padding:8px 10px;border-radius:6px;z-index:40;text-align:left;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.info:hover .tip,.info:focus .tip{display:block}
+.hint{font-size:12px;color:var(--ink-3);margin:8px 2px 0}
+.waccbox{font-weight:650;font-size:13px;margin-top:6px}
+.alt-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.mantab{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.mantab th{font-size:12px;color:var(--ink-3);text-align:right;font-weight:600;padding:3px}
+.mantab th:first-child,.mantab td:first-child{text-align:center;width:44px}
+.mantab td{padding:2px 3px}
+.mantab input{width:100%;text-align:right;padding:4px 6px;min-height:28px;border:1px solid var(--line-2);border-radius:5px;background:var(--panel)}
+.dim{opacity:.45;pointer-events:none}
+
+/* ---------- Ergebnisse ---------- */
+.results{min-width:0}
+.beschr{padding:12px 16px;margin-bottom:12px;font-size:13.5px;color:var(--ink-2);background:var(--accent-weak);border:1px solid transparent;border-radius:10px}
+.fehler{padding:12px 16px;margin-bottom:12px;background:var(--neg-weak);color:var(--neg);border-radius:10px;font-size:13.5px}
+.fehler ul{margin:4px 0 0;padding-left:20px}
+.report{padding:18px 20px 22px}
+.report + .report{margin-top:16px}
+.report h2{font-size:19px;font-weight:650;letter-spacing:-.01em}
+.report .sub{color:var(--ink-3);font-size:12.5px;margin-top:3px}
+.report h3{font-size:14px;font-weight:650;margin:20px 0 8px;color:var(--ink-2)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:9px;padding:10px 12px;border-top:3px solid var(--c)}
+.kpi .n{font-weight:650;font-size:13px;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi .row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink-3);padding:2px 0}
+.kpi .row b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:650;text-align:right}
+.kpi .row b.pos{color:var(--pos)} .kpi .row b.neg{color:var(--neg)}
+.verdicts{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.verdicts li{padding:7px 12px;border-radius:7px;background:var(--panel-2);font-size:13.5px;border-left:3px solid var(--line-2)}
+.verdicts li.pos{background:var(--pos-weak);border-left-color:var(--pos)}
+.verdicts li.neg{background:var(--neg-weak);border-left-color:var(--neg)}
+.verdicts li.best{border-left-color:var(--accent);background:var(--accent-weak)}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:12px;margin-top:16px}
+.chart{border:1px solid var(--line);border-radius:9px;padding:6px;background:var(--panel)}
+.chart.full{grid-column:1/-1}
+.chart.full svg{max-width:860px;margin:0 auto}
+.chart svg{display:block;width:100%;height:auto}
+.tw{overflow-x:auto;margin-top:6px;border:1px solid var(--line);border-radius:8px}
+table.kt{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+table.kt th,table.kt td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.kt thead th{background:var(--panel-2);font-weight:650;font-size:12.5px;color:var(--ink-2);text-align:right;position:sticky;top:0}
+table.kt th:first-child,table.kt td:first-child{text-align:left;white-space:normal;min-width:180px}
+table.kt td{text-align:right}
+table.kt tr:last-child td{border-bottom:0}
+table.kt tr.b td{font-weight:700;background:var(--panel-2)}
+table.kt tr.gap td{padding:3px;border-bottom:1px solid var(--line-2);background:transparent}
+table.kt td.ok{color:var(--pos);font-weight:700} table.kt td.no{color:var(--neg);font-weight:700} table.kt td.star{color:var(--accent);font-weight:700}
+table.kt.det td:first-child{min-width:50px;text-align:center}
+table.kt.det thead th:first-child{text-align:center}
+table.kt td.neg{color:var(--neg)}
+table.kt.sym td:nth-child(2){text-align:left;color:var(--ink-3)}
+details{margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:0 12px}
+details > summary{cursor:pointer;padding:9px 0;font-weight:600;font-size:13px;color:var(--ink-2)}
+details[open] > summary{border-bottom:1px solid var(--line);margin-bottom:8px}
+details .tw{margin-bottom:12px}
+pre.formeln{font:12.5px/1.6 var(--mono);white-space:pre-wrap;margin:0 0 12px;color:var(--ink-2)}
+.notes{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.note{font-size:13px;padding:9px 12px;border-radius:7px;background:var(--warn-weak);color:var(--warn)}
+.grenzen{font-size:12.5px;color:var(--ink-3);margin:14px 0 0}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:8px;font-size:13px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:92vw}
+.foot{max-width:1700px;margin:0 auto;padding:0 16px 24px;font-size:12px;color:var(--ink-3)}
+
+/* SVG-Diagramme */
+.ch-t{fill:var(--ink);font:600 14px var(--sans)}
+.ch-l{fill:var(--ink-2);font:11.5px var(--sans)}
+.ch-s{fill:var(--ink-3);font:11px var(--sans)}
+.ch-v{fill:var(--ink-2);font:600 10px var(--sans)}
+.ch-g{stroke:var(--grid);stroke-width:1}
+.ch-a{stroke:var(--axis);stroke-width:1}
+.ch-z{stroke:var(--ink-3);stroke-width:1.1}
+
+/* ---------- Druck / PDF ---------- */
+#druck{display:none}
+@media print{
+  :root,:root[data-theme="dark"]{
+    --bg:#fff; --panel:#fff; --panel-2:#f5f6f8; --ink:#000; --ink-2:#222; --ink-3:#555; --line:#d6d9de; --line-2:#c4c8ce;
+    --accent:#1d4ed8; --accent-weak:#eef2fc; --pos:#15803d; --pos-weak:#eef8f1; --neg:#b91c1c; --neg-weak:#fcf0f0;
+    --warn:#7c3a06; --warn-weak:#fdf6e7; --c1:#2563eb; --c2:#ea580c; --c3:#16a34a; --grid:#e6e8eb; --axis:#9ca3af;
+  }
+  @page{size:A4 portrait;margin:13mm 12mm 14mm}
+  body{background:#fff;font-size:10pt}
+  body.drucken > *:not(#druck){display:none !important}
+  body.drucken #druck{display:block}
+  #druck .report{border:0;padding:0;page-break-before:always}
+  #druck .report.first{page-break-before:auto}
+  #druck .charts{grid-template-columns:1fr;gap:6mm}
+  #druck .chart{max-width:170mm;margin:0 auto;width:100%;break-inside:avoid;border:0;padding:0}
+  #druck table.kt{font-size:8.5pt}
+  #druck table.kt th,#druck table.kt td{padding:3px 6px}
+  #druck .tw{overflow:visible;break-inside:auto}
+  #druck details{border:0;padding:0}
+  #druck details > summary{list-style:none;padding:4px 0;border-bottom:1px solid var(--line);font-size:10pt}
+  #druck .kpis{grid-template-columns:repeat(3,1fr)}
+  #druck .kpi,#druck .verdicts li,#druck .chart,#druck tr{break-inside:avoid}
+  #druck .head{border-bottom:2px solid #000;padding-bottom:3mm;margin-bottom:4mm}
+  #druck h3,#druck details > summary{break-after:avoid;page-break-after:avoid}
+  #druck .chart{max-width:160mm}
+  #druck .head h1{font-size:16pt}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <h1>Investitionsrechner</h1>
+      <span>Wirtschaftlichkeits- und Investitionsrechnung</span>
+    </div>
+    <div class="ctl">
+      <label for="methode">Verfahren</label>
+      <select id="methode"></select>
+    </div>
+    <div class="ctl">
+      <label for="vorlage">Vorlage</label>
+      <select id="vorlage"></select>
+      <button class="btn" id="btnVorlage" type="button">Laden</button>
+    </div>
+    <div class="sep"></div>
+    <div class="ctl">
+      <button class="btn primary" id="btnPdf" type="button" title="Bericht mit allen Diagrammen drucken bzw. als PDF speichern">PDF / Drucken</button>
+      <button class="btn" id="btnTxt" type="button">TXT</button>
+      <button class="btn" id="btnCsv" type="button">CSV</button>
+      <label class="chk" title="Aktiviert: PDF und TXT enthalten alle Verfahren. Deaktiviert: nur das gewählte Verfahren. CSV enthält immer alle Kennzahlen."><input type="checkbox" id="alle" checked> alle Verfahren</label>
+    </div>
+    <div class="sep"></div>
+    <div class="ctl">
+      <button class="btn" id="btnSave" type="button" title="Alle Eingaben als JSON-Datei speichern">Eingaben speichern</button>
+      <button class="btn" id="btnLoad" type="button" title="Gespeicherte JSON-Datei laden">Eingaben laden</button>
+      <input type="file" id="fileLoad" accept=".json,application/json" hidden>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="inputs panel" aria-label="Eingaben">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="tabpanes" id="panes"></div>
+  </aside>
+  <section class="results" aria-live="polite">
+    <div id="beschr" class="beschr"></div>
+    <div id="fehler" class="fehler" hidden></div>
+    <div id="ausgabe"></div>
+  </section>
+</main>
+<p class="foot">Alle Berechnungen laufen ausschließlich in Ihrem Browser – es werden keine Daten übertragen. Modellrechnung vor Steuern (außer EVA); ersetzt keine steuerliche oder betriebswirtschaftliche Beratung.</p>
+<div id="druck"></div>
+
+<script>
+"use strict";
+/* =============================================================================
+   Investitionsrechner – Web-Version (Port des Python-Programms v1.1)
+   Statische, dynamische und wertorientierte Verfahren der Investitionsrechnung.
+   Keine externen Abhängigkeiten: Diagramme als SVG, PDF über den Druckdialog.
+   ============================================================================= */
+const APP_TITEL = "Investitionsrechner – Wirtschaftlichkeits- und Investitionsrechnung";
+const VERSION = "1.1-web";
+const MAX_JAHRE = 60;
+const BREITE = 96;
+const PAL = ["var(--c1)", "var(--c2)", "var(--c3)"];
+const POS = "var(--pos)", NEG = "var(--neg)";
+const SPEICHER_KEY = "investitionsrechner.eingaben.v1";
+
+/* ---------------------------------------------------------------- Zahlen */
+const _nf = {};
+function nf(d) { return _nf[d] || (_nf[d] = new Intl.NumberFormat("de-DE", {minimumFractionDigits: d, maximumFractionDigits: d})); }
+function bad(v) { return v === null || v === undefined || typeof v !== "number" || !isFinite(v); }
+function de(v, d = 2) {
+  if (bad(v)) return "–";
+  let s = nf(d).format(v);
+  if (/^-[0.,]*$/.test(s)) s = s.slice(1);
+  return s;
+}
+const eur = (v, d = 2) => bad(v) ? "–" : de(v, d) + " €";
+const pct = (v, d = 2) => bad(v) ? "–" : de(v * 100, d) + " %";
+const jahre = (v, d = 2) => bad(v) ? "–" : de(v, d) + " J.";
+const mittel = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+const summe = xs => xs.reduce((a, b) => a + b, 0);
+function eingabeFmt(v) {
+  if (v === null || v === undefined || v === "") return "";
+  let s = Number(v).toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+  return s.replace(".", ",");
+}
+function csvn(v, d = 4) { return bad(v) ? "" : v.toFixed(d).replace(".", ","); }
+function parseNum(text, name = "Wert") {
+  let s = String(text ?? "").trim().replace(/[−–]/g, "-");
+  for (const z of ["€", "%", " ", " ", "'"]) s = s.split(z).join("");
+  if (s === "") throw new Error(`„${name}“ ist leer.`);
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  else if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) throw new Error(`„${name}“: '${text}' ist keine gültige Zahl.`);
+  return parseFloat(s);
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+
+/* ---------------------------------------------------------------- Finanzmathematik */
+function npv(cf, i) { let s = 0; for (let t = 0; t < cf.length; t++) s += cf[t] * Math.pow(1 + i, -t); return s; }
+function anf(i, n) {
+  if (n <= 0) return NaN;
+  if (Math.abs(i) < 1e-12) return 1 / n;
+  const q = Math.pow(1 + i, n);
+  return i * q / (q - 1);
+}
+function irrAlle(cf) {
+  if (!cf.length || !(cf.some(c => c > 0) && cf.some(c => c < 0))) return [];
+  const raster = [];
+  for (let k = 0; k <= Math.round(1.99 / 0.0025); k++) raster.push(-0.99 + k * 0.0025);
+  for (let k = 1; k <= 180; k++) raster.push(1.0 + k * 0.05);
+  const w = [];
+  let r0 = raster[0], v0 = npv(cf, r0);
+  for (let j = 1; j < raster.length; j++) {
+    const r1 = raster[j], v1 = npv(cf, r1);
+    if (v0 === 0) w.push(r0);
+    else if (v0 * v1 < 0) {
+      let lo = r0, hi = r1, flo = v0;
+      for (let it = 0; it < 200; it++) {
+        const mid = (lo + hi) / 2, fm = npv(cf, mid);
+        if (flo * fm <= 0) hi = mid; else { lo = mid; flo = fm; }
+        if (hi - lo < 1e-13) break;
+      }
+      w.push((lo + hi) / 2);
+    }
+    r0 = r1; v0 = v1;
+  }
+  if (v0 === 0) w.push(r0);
+  w.sort((a, b) => a - b);
+  const erg = [];
+  for (const x of w) if (!erg.length || Math.abs(x - erg[erg.length - 1]) > 1e-7) erg.push(x);
+  return erg;
+}
+function mirr(cf, finanz, reinvest) {
+  const n = cf.length - 1;
+  if (n < 1) return null;
+  let pvNeg = 0, fvPos = 0;
+  cf.forEach((c, t) => { if (c < 0) pvNeg += c * Math.pow(1 + finanz, -t); if (c > 0) fvPos += c * Math.pow(1 + reinvest, n - t); });
+  if (pvNeg >= 0 || fvPos <= 0) return null;
+  return Math.pow(fvPos / -pvNeg, 1 / n) - 1;
+}
+function amortisation(werte) {
+  const kum = []; let s = 0;
+  for (const v of werte) { s += v; kum.push(s); }
+  if (kum.length && kum[0] >= 0) return [0, kum];
+  for (let t = 1; t < kum.length; t++)
+    if (kum[t - 1] < 0 && kum[t] >= 0) return [t - 1 + (-kum[t - 1]) / (kum[t] - kum[t - 1]), kum];
+  return [null, kum];
+}
+
+/* ---------------------------------------------------------------- Modell */
+function wacc(g) { return g.wacc_modus === "kalk" ? g.i : g.ek_quote * g.r_ek + (1 - g.ek_quote) * g.r_fk * (1 - g.steuer); }
+const I0von = a => a.A0 - a.foerderung;
+
+function pruefe(a) {
+  const f = [];
+  if (!(a.n >= 1 && a.n <= MAX_JAHRE)) f.push(`Nutzungsdauer muss zwischen 1 und ${MAX_JAHRE} Jahren liegen.`);
+  if (a.A0 < 0) f.push("Anschaffungsauszahlung darf nicht negativ sein.");
+  if (a.foerderung < 0 || a.foerderung > a.A0) f.push("Förderung muss zwischen 0 und der Anschaffungsauszahlung liegen.");
+  if (a.L < 0 || a.WC < 0) f.push("Restwert und Working Capital dürfen nicht negativ sein.");
+  if (a.x < 0) f.push("Menge darf nicht negativ sein.");
+  if (a.g_e <= -1 || a.g_a <= -1) f.push("Steigerungsraten müssen größer als −100 % sein.");
+  if (a.modus === "manuell" && (a.man_E.length !== a.n || a.man_A.length !== a.n))
+    f.push("Die manuelle Zahlungsreihe passt nicht zur Nutzungsdauer.");
+  return f.map(t => `${a.name}: ${t}`);
+}
+
+function zahlungsreihe(a, f = {}) {
+  const n = a.n, F = k => (k in f ? f[k] : 1);
+  const I0 = I0von(a) * F("inv"), L = a.L * F("rest");
+  const E = Array(n + 1).fill(0), Aus = Array(n + 1).fill(0), fix = Array(n + 1).fill(0), vr = Array(n + 1).fill(0), R = Array(n + 1).fill(0);
+  if (a.modus === "abgeleitet") {
+    const x = a.x * F("menge");
+    for (let t = 1; t <= n; t++) {
+      const ge = Math.pow(1 + a.g_e, t - 1), ga = Math.pow(1 + a.g_a, t - 1);
+      E[t] = a.p * F("preis") * x * ge;
+      vr[t] = a.kv * F("kv") * x * ga;
+      fix[t] = a.kfix * F("kfix") * ga;
+      Aus[t] = vr[t] + fix[t];
+    }
+  } else {
+    for (let t = 1; t <= n; t++) { E[t] = a.man_E[t - 1] * F("E"); Aus[t] = a.man_A[t - 1] * F("A"); }
+  }
+  R[n] = L + a.WC;
+  const CF = [-(I0 + a.WC)];
+  for (let t = 1; t <= n; t++) CF.push(E[t] - Aus[t] + R[t]);
+  return {n, I0, L, E, Aus, fix, var: vr, R, CF};
+}
+
+function analysiere(a, g) {
+  const z = zahlungsreihe(a), n = a.n, i = g.i;
+  const {I0, L, E, Aus, CF} = z, WC = a.WC;
+  const r = {alt: a, z, n, I0, L, WC, Ikap: I0 + WC};
+  r.nur_kosten = summe(E.slice(1)) === 0;
+  // statisch
+  const Em = mittel(E.slice(1)), KB = mittel(Aus.slice(1));
+  const D = (I0 - L) / n, Kap = (I0 + L) / 2 + WC, Z = Kap * i, K = KB + D + Z, G = Em - K;
+  Object.assign(r, {Em, KB, D, Kap, Z, K, G});
+  r.ROI = Kap > 0 ? (G + Z) / Kap : null;
+  r.k_stueck = a.x > 0 ? K / a.x : null;
+  r.abgeleitet = a.modus === "abgeleitet";
+  if (r.abgeleitet) {
+    const fe = mittel(Array.from({length: n}, (_, k) => Math.pow(1 + a.g_e, k)));
+    const fa = mittel(Array.from({length: n}, (_, k) => Math.pow(1 + a.g_a, k)));
+    r.fixm = a.kfix * fa; r.varm = a.kv * a.x * fa; r.kv_m = a.kv * fa; r.p_m = a.p * fe;
+    r.Kf = r.fixm + D + Z; r.db = r.p_m - r.kv_m; r.BE = r.db > 0 ? r.Kf / r.db : null;
+  } else { for (const k of ["fixm", "varm", "kv_m", "p_m", "Kf", "db", "BE"]) r[k] = null; }
+  r.rueck = Em - KB;
+  r.t_avg = r.rueck > 0 ? (I0 + WC) / r.rueck : null;
+  [r.t_kum, r.kum] = amortisation(CF);
+  // dynamisch
+  const df = Array.from({length: n + 1}, (_, t) => Math.pow(1 + i, -t));
+  const pv = CF.map((c, t) => c * df[t]);
+  r.df = df; r.pv = pv; r.NPV = summe(pv);
+  [r.t_dyn, r.kum_pv] = amortisation(pv);
+  r.KWR = r.Ikap > 0 ? r.NPV / r.Ikap : null;
+  r.KEW = r.NPV * Math.pow(1 + i, n);
+  r.irrs = irrAlle(CF);
+  r.IRR = r.irrs.length === 1 ? r.irrs[0] : null;
+  r.MIRR = mirr(CF, i, g.r_re);
+  const f = anf(i, n);
+  r.ANF = f;
+  r.PV_E = 0; r.PV_A = 0;
+  for (let t = 1; t <= n; t++) { r.PV_E += E[t] * df[t]; r.PV_A += Aus[t] * df[t]; }
+  r.PV_R = z.R[n] * df[n];
+  r.AN = r.NPV * f; r.AN_E = r.PV_E * f; r.AN_A = r.PV_A * f; r.KD = (r.Ikap - r.PV_R) * f;
+  // Vermögensendwert
+  const V = [g.ek + CF[0]], Vz = [0];
+  for (let t = 1; t <= n; t++) {
+    const vor = V[V.length - 1], zs = vor >= 0 ? g.h : g.s_soll;
+    Vz.push(vor * zs); V.push(vor * (1 + zs) + CF[t]);
+  }
+  r.V = V; r.Vz = Vz; r.VEW = V[n]; r.VEW_ref = g.ek * Math.pow(1 + g.h, n); r.VEW_diff = r.VEW - r.VEW_ref;
+  // EVA
+  const w = wacc(g), s = g.steuer;
+  r.eva_cap = []; r.eva_ebit = []; r.eva_nopat = []; r.eva_kk = []; r.eva = [];
+  for (let t = 1; t <= n; t++) {
+    const C = I0 - (t - 1) * D + WC, eb = E[t] - Aus[t] - D, no = eb * (1 - s);
+    r.eva_cap.push(C); r.eva_ebit.push(eb); r.eva_nopat.push(no); r.eva_kk.push(w * C); r.eva.push(no - w * C);
+  }
+  r.wacc = w;
+  r.MVA = 0; for (let t = 1; t <= n; t++) r.MVA += r.eva[t - 1] * Math.pow(1 + w, -t);
+  r.cf_st = [-(I0 + WC)];
+  for (let t = 1; t <= n; t++) r.cf_st.push((E[t] - Aus[t]) * (1 - s) + s * D + z.R[t]);
+  r.NPV_st = npv(r.cf_st, w);
+  return r;
+}
+
+function sensParameter(a, g) {
+  let p;
+  if (a.modus === "abgeleitet") p = [["inv", "Investition (netto)", I0von(a), "€"], ["menge", "Menge / Leistung", a.x, a.einheit],
+    ["preis", "Preis/Erlös je Einheit", a.p, "€"], ["kv", "Variable Kosten je Einh.", a.kv, "€"],
+    ["kfix", "Fixkosten p.a.", a.kfix, "€"], ["rest", "Restwert", a.L, "€"]];
+  else p = [["inv", "Investition (netto)", I0von(a), "€"], ["E", "Einzahlungen (alle J.)", 1, "×"],
+    ["A", "Lfd. Auszahlungen (alle J.)", 1, "×"], ["rest", "Restwert", a.L, "€"]];
+  p.push(["zins", "Kalkulationszins", g.i, "%"]);
+  return p.filter(q => Math.abs(q[2]) > 1e-12);
+}
+function npvVariiert(a, g, key, faktor) {
+  if (key === "zins") return npv(zahlungsreihe(a).CF, g.i * faktor);
+  return npv(zahlungsreihe(a, {[key]: faktor}).CF, g.i);
+}
+function sensitivitaet(a, g, r) {
+  const d = g.sens, stufen = [-d, -d / 2, 0, d / 2, d], zeilen = [];
+  for (const [key, label, basis, einheit] of sensParameter(a, g)) {
+    const lo = npvVariiert(a, g, key, 1 - d), hi = npvVariiert(a, g, key, 1 + d);
+    const spinne = stufen.map(s => npvVariiert(a, g, key, 1 + s));
+    let krit, fk;
+    if (key === "zins") { krit = r.IRR; fk = krit !== null && Math.abs(g.i) > 1e-12 ? krit / g.i : null; }
+    else {
+      const n0 = npvVariiert(a, g, key, 0), b = r.NPV - n0;
+      fk = Math.abs(b) > 1e-9 ? -n0 / b : null;
+      krit = fk !== null ? basis * fk : null;
+    }
+    zeilen.push({key, label, basis, einheit, lo, hi, fk, krit, spinne});
+  }
+  return {stufen, zeilen};
+}
+
+class Ergebnis {
+  constructor(alts, g) {
+    this.alts = alts; this.g = g;
+    this.rs = alts.map(a => analysiere(a, g));
+    this.namen = alts.map(a => a.name);
+    this.sens = alts.map((a, k) => sensitivitaet(a, g, this.rs[k]));
+    this.paare = [];
+    for (let ia = 0; ia < alts.length; ia++) for (let ib = ia + 1; ib < alts.length; ib++) {
+      const ra = this.rs[ia], rb = this.rs[ib], d = {a: ia, b: ib, xkrit: null};
+      if (ra.abgeleitet && rb.abgeleitet && Math.abs(ra.kv_m - rb.kv_m) > 1e-12) {
+        const xk = (ra.Kf - rb.Kf) / (rb.kv_m - ra.kv_m);
+        d.xkrit = xk > 0 ? xk : null;
+      }
+      const m = Math.max(ra.n, rb.n) + 1;
+      const pad = c => c.concat(Array(m - c.length).fill(0));
+      const ca = pad(ra.z.CF), cb = pad(rb.z.CF);
+      d.diff = cb.map((y, t) => y - ca[t]);
+      d.fisher = irrAlle(d.diff);
+      d.npv_diff = npv(d.diff, g.i);
+      this.paare.push(d);
+    }
+    this.erstellt = new Date();
+  }
+}
+
+/* ---------------------------------------------------------------- Berichtsbausteine */
+const BESCHREIBUNG = {
+  uebersicht: "Alle Verfahren auf einen Blick: zentrale Kennzahlen, Erfüllung der jeweiligen Vorteilhaftigkeitskriterien und Rangfolge der Alternativen.",
+  kosten: "Vergleicht die durchschnittlichen jährlichen Gesamtkosten (Betriebskosten + kalkulatorische Abschreibung + kalkulatorische Zinsen) der Alternativen. Geeignet bei gleicher Leistung, z. B. Ersatz- und Rationalisierungsinvestitionen.",
+  gewinn: "Vergleicht den durchschnittlichen Jahresgewinn (Erlöse − Gesamtkosten) und ermittelt die Break-even-Menge. Geeignet, wenn sich die Alternativen auch in den Erlösen unterscheiden.",
+  rentabilitaet: "Setzt den Gewinn vor kalkulatorischen Zinsen ins Verhältnis zum durchschnittlich gebundenen Kapital (Return on Investment) und vergleicht mit der Mindestverzinsung.",
+  amort_stat: "Ermittelt, nach wie vielen Jahren das eingesetzte Kapital über die Rückflüsse wieder zurückgeflossen ist (Durchschnitts- und Kumulationsmethode, ohne Verzinsung).",
+  kapitalwert: "Diskontiert alle Ein- und Auszahlungen mit dem Kalkulationszins auf den Zeitpunkt der Investition. Ein positiver Kapitalwert bedeutet Vermögenszuwachs über die Mindestverzinsung hinaus.",
+  izf: "Ermittelt den Zinssatz, bei dem der Kapitalwert null ist (effektive Rendite), sowie den modifizierten internen Zinsfuß mit realistischer Wiederanlageprämisse und den Fisher-Zins zwischen Alternativen.",
+  annuitaet: "Verteilt den Kapitalwert gleichmäßig auf die Nutzungsdauer: konstanter jährlicher Überschuss. Besonders geeignet für Alternativen mit unterschiedlicher Nutzungsdauer.",
+  amort_dyn: "Wie die statische Amortisationsrechnung, aber mit abgezinsten Zahlungen – berücksichtigt den Zeitwert des Geldes.",
+  vew: "Ermittelt das Vermögen am Ende der Nutzungsdauer mit getrennten Soll- und Habenzinsen (Kontenausgleichsgebot) und vergleicht es mit der Anlage des Eigenkapitals ohne Investition.",
+  eva: "Wertorientierte Kennzahl: Geschäftsergebnis nach Steuern (NOPAT) abzüglich der Kosten des gebundenen Kapitals (WACC). Der Barwert aller EVA (MVA) entspricht dem Kapitalwert nach Steuern.",
+  sens: "Zeigt, wie stark der Kapitalwert auf Änderungen einzelner Eingangsgrößen reagiert, und ermittelt kritische Werte, bei denen die Investition unvorteilhaft wird.",
+};
+
+function neuerBericht(key) {
+  return {key, titel: METHODEN[key].titel, beschreibung: BESCHREIBUNG[key] || "", kpis: [], ergebnis: [],
+    formeln: [], tabellen: [], details: [], hinweise: [], grenzen: "", charts: []};
+}
+function haupttabelle(e, zeilen, fett = [], titel = "Kennzahlen") {
+  return {titel, kopf: ["", ...e.namen], zeilen, fett: new Set(fett)};
+}
+function beste(e, key, maximal = true) {
+  let bestK = null, bestV = null;
+  e.rs.forEach((r, k) => {
+    const v = typeof key === "function" ? key(r) : r[key];
+    if (bad(v)) return;
+    if (bestV === null || (maximal ? v > bestV : v < bestV)) { bestV = v; bestK = k; }
+  });
+  return bestK;
+}
+function kpi(e, label, fn, ton) {
+  return {label, werte: e.rs.map(r => ({v: fn(r), ton: ton ? ton(r) : ""}))};
+}
+const tonV = v => bad(v) ? "" : (v >= 0 ? "pos" : "neg");
+function amortStr(v, n) { return v === null ? `> ${n} J. (nicht erreicht)` : jahre(v); }
+function hinweiseAllgemein(e) {
+  const h = [];
+  if (e.rs.some(r => r.Ikap <= 0))
+    h.push("Mindestens eine Alternative hat keine Anfangsauszahlung (Nettoinvestition 0 €). Kapitalwert, Annuität und Vermögensendwert bleiben aussagekräftig; Rentabilität, Kapitalwertrate, interner Zinsfuß und Amortisation sind ohne Kapitaleinsatz nicht definiert.");
+  if (e.rs.some(r => r.nur_kosten))
+    h.push("Für mindestens eine Alternative sind keine Einzahlungen erfasst (reine Kostenbetrachtung). Gewinn, Rentabilität, Amortisation und interner Zinsfuß sind dann nicht aussagekräftig. Verwenden Sie die Kostenvergleichsrechnung bzw. Kapitalwert/Annuität (höchster = geringster Kostenbarwert) oder erfassen Sie Einsparungen als Einzahlungen.");
+  return h;
+}
+function hinweisLaufzeit(e) {
+  return new Set(e.rs.map(r => r.n)).size > 1 ? ["Die Nutzungsdauern sind unterschiedlich. Der Kapitalwertvergleich unterstellt dann Ergänzungsinvestitionen zum Kalkulationszins (Kapitalwert 0). Bei identischer Wiederholung der Investitionen ist die Annuitätenmethode das geeignete Vergleichsmaß."] : [];
+}
+const D0 = v => de(v, 0);
+
+/* ---------------------------------------------------------------- Verfahren */
+function bKosten(e) {
+  const b = neuerBericht("kosten"), rs = e.rs;
+  b.formeln = [
+    "Kalk. Abschreibung      D = (I₀ − L) / n",
+    "Ø gebundenes Kapital    Ø K = (I₀ + L) / 2 + Working Capital",
+    "Kalk. Zinsen            Z = Ø K × i",
+    "Gesamtkosten p.a.       K = Ø Betriebskosten (fix + variabel) + D + Z",
+    "Stückkosten             k = K / x",
+    "Kritische Menge         x* = (Kfix_A − Kfix_B) / (kv_B − kv_A),  Kfix = fixe Betriebskosten + D + Z"];
+  b.kpis = [kpi(e, "Ø Gesamtkosten p.a.", r => eur(r.K, 0)), kpi(e, "Stückkosten", r => eur(r.k_stueck, 4))];
+  b.tabellen.push(haupttabelle(e, [
+    ["Nettoinvestition I₀", ...rs.map(r => eur(r.I0))],
+    ["Restwert L", ...rs.map(r => eur(r.L))],
+    ["Nutzungsdauer n", ...rs.map(r => `${r.n} J.`)],
+    ["Menge / Leistung p.a.", ...rs.map(r => `${de(r.alt.x, 0)} ${r.alt.einheit}`)],
+    null,
+    ["Ø fixe Betriebskosten", ...rs.map(r => eur(r.fixm))],
+    ["Ø variable Kosten", ...rs.map(r => eur(r.varm))],
+    ["Ø Betriebskosten gesamt", ...rs.map(r => eur(r.KB))],
+    ["Kalk. Abschreibung D", ...rs.map(r => eur(r.D))],
+    ["Ø gebundenes Kapital", ...rs.map(r => eur(r.Kap))],
+    ["Kalk. Zinsen Z", ...rs.map(r => eur(r.Z))],
+    ["Gesamtkosten p.a.", ...rs.map(r => eur(r.K))],
+    ["Stückkosten", ...rs.map(r => eur(r.k_stueck, 4))],
+    ["Fixkosten inkl. D und Z", ...rs.map(r => eur(r.Kf))],
+    ["Ø variable Kosten je Einheit", ...rs.map(r => eur(r.kv_m, 4))],
+  ], ["Gesamtkosten p.a."]));
+  if (rs.length > 1) {
+    const bk = beste(e, "K", false);
+    b.ergebnis.push({t: `Geringste Gesamtkosten p.a.: ${e.namen[bk]} (${eur(rs[bk].K)})`, ton: "best"});
+    const mengen = new Set(rs.map(r => Math.round(r.alt.x * 1e6)));
+    if (mengen.size > 1 && rs.every(r => r.k_stueck !== null)) {
+      const bs = beste(e, "k_stueck", false);
+      b.ergebnis.push({t: `Geringste Stückkosten: ${e.namen[bs]} (${eur(rs[bs].k_stueck, 4)}) – die Mengen sind unterschiedlich, maßgeblich ist daher der Stückkostenvergleich.`, ton: "best"});
+    }
+    for (const p of e.paare) {
+      const na = e.namen[p.a], nb = e.namen[p.b], ra = rs[p.a];
+      if (p.xkrit !== null) {
+        const unter = ra.Kf < rs[p.b].Kf ? na : nb, ueber = unter === na ? nb : na;
+        b.ergebnis.push({t: `Kritische Menge ${na} / ${nb}: ${de(p.xkrit, 0)} ${ra.alt.einheit} p.a. – darunter ist ${unter} günstiger, darüber ${ueber}.`, ton: ""});
+      } else if (ra.abgeleitet && rs[p.b].abgeleitet)
+        b.ergebnis.push({t: `${na} / ${nb}: keine positive kritische Menge (eine Alternative ist bei jeder Menge günstiger).`, ton: ""});
+    }
+  } else b.ergebnis.push({t: `Gesamtkosten p.a.: ${eur(rs[0].K)}. Ein Kostenvergleich benötigt mindestens zwei Alternativen.`, ton: ""});
+  b.grenzen = "Statisch (Ø-Periode, keine zeitliche Verteilung), Erlöse werden ignoriert – nur sinnvoll bei gleicher Leistung bzw. Ersatz-/Rationalisierungsentscheidungen. Aussage zur absoluten Vorteilhaftigkeit ist nicht möglich.";
+  b.hinweise = hinweiseAllgemein(e);
+  b.charts = chKosten(e);
+  return b;
+}
+
+function bGewinn(e) {
+  const b = neuerBericht("gewinn"), rs = e.rs;
+  b.formeln = [
+    "Ø Gewinn p.a.            G = Ø Erlöse − (Ø Betriebskosten + D + Z)",
+    "Deckungsbeitrag/Einheit  db = p − kv",
+    "Break-even-Menge         x_BE = (fixe Betriebskosten + D + Z) / db"];
+  b.kpis = [kpi(e, "Ø Gewinn p.a.", r => eur(r.G, 0), r => tonV(r.G)),
+    kpi(e, "Break-even-Menge", r => r.BE ? `${de(r.BE, 0)} ${r.alt.einheit}` : "–")];
+  b.tabellen.push(haupttabelle(e, [
+    ["Ø Erlöse / Einzahlungen p.a.", ...rs.map(r => eur(r.Em))],
+    ["Ø Gesamtkosten p.a.", ...rs.map(r => eur(r.K))],
+    ["Ø Gewinn p.a.", ...rs.map(r => eur(r.G))],
+    ["Gewinn je Einheit", ...rs.map(r => r.alt.x > 0 ? eur(r.G / r.alt.x, 4) : "–")],
+    null,
+    ["Ø Preis je Einheit", ...rs.map(r => eur(r.p_m, 4))],
+    ["Ø var. Kosten je Einheit", ...rs.map(r => eur(r.kv_m, 4))],
+    ["Deckungsbeitrag je Einheit", ...rs.map(r => eur(r.db, 4))],
+    ["Fixkosten inkl. D und Z", ...rs.map(r => eur(r.Kf))],
+    ["Break-even-Menge p.a.", ...rs.map(r => r.BE ? `${de(r.BE, 0)} ${r.alt.einheit}` : "–")],
+    ["Auslastung des Break-even", ...rs.map(r => r.BE && r.alt.x > 0 ? pct(r.BE / r.alt.x) : "–")],
+    ["Sicherheitsabstand", ...rs.map(r => r.BE && r.alt.x > 0 ? pct(1 - r.BE / r.alt.x) : "–")],
+  ], ["Ø Gewinn p.a."]));
+  for (const r of rs) b.ergebnis.push({t: `${r.alt.name}: ${r.G > 0 ? "vorteilhaft (Gewinn > 0)" : "nicht vorteilhaft (Gewinn ≤ 0)"}`, ton: r.G > 0 ? "pos" : "neg"});
+  if (rs.length > 1) { const k = beste(e, "G"); b.ergebnis.push({t: `Höchster Ø Gewinn: ${e.namen[k]} (${eur(rs[k].G)})`, ton: "best"}); }
+  b.grenzen = "Statisch, Kapitaleinsatz und Nutzungsdauer gehen nur über D und Z ein; unterschiedliche Kapitalbindung wird beim Vergleich nicht vollständig berücksichtigt (→ Rentabilitätsrechnung, Kapitalwertmethode). Die Break-even-Menge unterstellt lineare Kosten- und Erlösverläufe.";
+  b.hinweise = hinweiseAllgemein(e);
+  b.charts = chGewinn(e);
+  return b;
+}
+
+function bRentabilitaet(e) {
+  const b = neuerBericht("rentabilitaet"), rs = e.rs, g = e.g;
+  b.formeln = ["Rentabilität R = (Ø Gewinn + kalk. Zinsen) / Ø gebundenes Kapital",
+    "Ø gebundenes Kapital = (I₀ + L) / 2 + Working Capital", "Vorteilhaft, wenn R ≥ Kalkulationszins i"];
+  b.kpis = [kpi(e, "Rentabilität (ROI)", r => pct(r.ROI), r => r.ROI === null ? "" : (r.ROI >= g.i ? "pos" : "neg"))];
+  b.tabellen.push(haupttabelle(e, [
+    ["Ø Gewinn p.a.", ...rs.map(r => eur(r.G))],
+    ["+ Kalk. Zinsen", ...rs.map(r => eur(r.Z))],
+    ["= Gewinn vor Zinsen", ...rs.map(r => eur(r.G + r.Z))],
+    ["Ø gebundenes Kapital", ...rs.map(r => eur(r.Kap))],
+    ["Rentabilität R", ...rs.map(r => pct(r.ROI))],
+    ["Mindestverzinsung i", ...rs.map(() => pct(g.i))],
+    ["Überrendite R − i", ...rs.map(r => r.ROI !== null ? pct(r.ROI - g.i) : "–")],
+  ], ["Rentabilität R"]));
+  for (const r of rs) {
+    const ok = r.ROI !== null && r.ROI >= g.i;
+    b.ergebnis.push({t: `${r.alt.name}: ${ok ? "vorteilhaft" : "nicht vorteilhaft"} (R = ${pct(r.ROI)} ${ok ? "≥" : "<"} i = ${pct(g.i)})`, ton: ok ? "pos" : "neg"});
+  }
+  if (rs.length > 1) { const k = beste(e, "ROI"); if (k !== null) b.ergebnis.push({t: `Höchste Rentabilität: ${e.namen[k]}`, ton: "best"}); }
+  b.grenzen = "Statisch; relative Kennzahl ohne Aussage über die absolute Höhe des Gewinns. Beim Vergleich unterschiedlich großer Investitionen wird implizit unterstellt, dass Differenzbeträge zur gleichen Rendite angelegt werden.";
+  b.hinweise = hinweiseAllgemein(e);
+  b.charts = chRentabilitaet(e);
+  return b;
+}
+
+function detailJahre(r, spalten, werte, dez) {
+  const zeilen = [];
+  for (let t = 0; t <= r.n; t++) zeilen.push([String(t), ...werte(t).map((v, k) => v === "" ? "" : de(v, dez ? dez[k] : 0))]);
+  return {titel: r.alt.name, kopf: ["Jahr", ...spalten], zeilen, det: true};
+}
+
+function bAmortStat(e) {
+  const b = neuerBericht("amort_stat"), rs = e.rs, g = e.g;
+  b.formeln = ["Durchschnittsmethode:  t_A = Kapitaleinsatz (I₀ + WC) / Ø Rückfluss",
+    "                       Ø Rückfluss = Ø Einzahlungen − Ø lfd. Auszahlungen (= G + D + Z)",
+    "Kumulationsmethode:    Jahr, in dem die Summe der (unverzinsten) Cashflows ≥ 0 wird",
+    "                       (innerhalb des Jahres linear interpoliert; Restwert erst im Jahr n)",
+    `Vorteilhaft, wenn t_A ≤ maximal akzeptierte Dauer (${de(g.t_max)} Jahre)`];
+  b.kpis = [kpi(e, "Amortisation (Kumulation)", r => amortStr(r.t_kum, r.n), r => r.t_kum !== null && r.t_kum <= g.t_max ? "pos" : "neg")];
+  b.tabellen.push(haupttabelle(e, [
+    ["Kapitaleinsatz I₀ + WC", ...rs.map(r => eur(r.Ikap))],
+    ["Ø Rückfluss p.a.", ...rs.map(r => eur(r.rueck))],
+    ["Amortisation Ø-Methode", ...rs.map(r => amortStr(r.t_avg, r.n))],
+    ["Amortisation Kumulation", ...rs.map(r => amortStr(r.t_kum, r.n))],
+    ["Nutzungsdauer", ...rs.map(r => `${r.n} J.`)],
+  ], ["Amortisation Kumulation"]));
+  for (const r of rs) {
+    const ok = r.t_kum !== null && r.t_kum <= g.t_max;
+    b.ergebnis.push({t: `${r.alt.name}: ${ok ? "vorteilhaft" : "nicht vorteilhaft"} (Kumulation ${amortStr(r.t_kum, r.n)}, Grenze ${de(g.t_max)} J.)`, ton: ok ? "pos" : "neg"});
+  }
+  if (rs.length > 1) { const k = beste(e, "t_kum", false); if (k !== null) b.ergebnis.push({t: `Kürzeste Amortisationsdauer: ${e.namen[k]}`, ton: "best"}); }
+  b.details = rs.map(r => detailJahre(r, ["Cashflow", "kumuliert"], t => [r.z.CF[t], r.kum[t]]));
+  b.details.forEach(d => d.titel = "Kumulierte Cashflows – " + d.titel);
+  b.grenzen = "Risiko-/Liquiditätskennzahl, kein Rentabilitätsmaß: Zahlungen nach dem Amortisationszeitpunkt und der Zeitwert des Geldes bleiben unberücksichtigt (→ dynamische Amortisationsrechnung).";
+  b.hinweise = hinweiseAllgemein(e);
+  b.charts = chAmortStat(e);
+  return b;
+}
+
+function dynDetail(r) {
+  const z = r.z;
+  const d = detailJahre(r, ["Einzahl.", "Auszahl.", "Rest + WC", "Cashflow", "Abzinsf.", "Barwert", "kum. Barwert"],
+    t => [z.E[t], t ? z.Aus[t] : r.Ikap, z.R[t], z.CF[t], r.df[t], r.pv[t], r.kum_pv[t]], [0, 0, 0, 0, 4, 0, 0]);
+  d.titel = "Zahlungsreihe und Barwerte – " + r.alt.name;
+  return d;
+}
+
+function bKapitalwert(e) {
+  const b = neuerBericht("kapitalwert"), rs = e.rs;
+  b.formeln = ["C₀ = −(I₀ + WC) + Σ (Eₜ − Aₜ)·(1+i)^−t + (L + WC)·(1+i)^−n",
+    "Kapitalwertrate  KWR = C₀ / (I₀ + WC)       Kapitalendwert  Cₙ = C₀·(1+i)^n",
+    "Vorteilhaft, wenn C₀ ≥ 0; beim Vergleich ist der höchste Kapitalwert vorzuziehen."];
+  b.kpis = [kpi(e, "Kapitalwert C₀", r => eur(r.NPV, 0), r => tonV(r.NPV)), kpi(e, "Kapitalwertrate", r => pct(r.KWR))];
+  b.tabellen.push(haupttabelle(e, [
+    ["Barwert Einzahlungen", ...rs.map(r => eur(r.PV_E))],
+    ["Barwert lfd. Auszahlungen", ...rs.map(r => eur(-r.PV_A))],
+    ["Barwert Restwert + WC", ...rs.map(r => eur(r.PV_R))],
+    ["Investition (t = 0)", ...rs.map(r => eur(-r.Ikap))],
+    ["Kapitalwert C₀", ...rs.map(r => eur(r.NPV))],
+    ["Kapitalwertrate", ...rs.map(r => pct(r.KWR))],
+    ["Kapitalendwert Cₙ", ...rs.map(r => eur(r.KEW))],
+  ], ["Kapitalwert C₀"]));
+  for (const r of rs) b.ergebnis.push({t: `${r.alt.name}: ${r.NPV >= 0 ? "vorteilhaft" : "nicht vorteilhaft"} (C₀ = ${eur(r.NPV)})`, ton: r.NPV >= 0 ? "pos" : "neg"});
+  if (rs.length > 1) {
+    const k = beste(e, "NPV"); b.ergebnis.push({t: `Höchster Kapitalwert: ${e.namen[k]}`, ton: "best"});
+    const kk = beste(e, "KWR"); if (kk !== null && kk !== k) b.ergebnis.push({t: `Höchste Kapitalwertrate (bei Kapitalknappheit relevant): ${e.namen[kk]}`, ton: ""});
+  }
+  b.details = rs.map(dynDetail);
+  b.grenzen = "Unterstellt einen vollkommenen Kapitalmarkt (Anlage und Kreditaufnahme zum Kalkulationszins). Ergebnis reagiert empfindlich auf den Zinssatz (→ Sensitivitätsanalyse). Werte vor Steuern.";
+  b.hinweise = [...hinweisLaufzeit(e), ...hinweiseAllgemein(e)];
+  b.charts = chKapitalwert(e);
+  return b;
+}
+
+function irrTxt(r) { return !r.irrs.length ? "keiner" : r.irrs.length > 1 ? "mehrdeutig" : pct(r.IRR); }
+
+function bIzf(e) {
+  const b = neuerBericht("izf"), rs = e.rs, g = e.g;
+  b.formeln = ["IRR:  r mit  Σ CFₜ·(1+r)^−t = 0   (numerisch bestimmt, alle Lösungen werden gesucht)",
+    "MIRR: ( Σ CFₜ⁺·(1+r_re)^(n−t) / |Σ CFₜ⁻·(1+i)^−t| )^(1/n) − 1",
+    `      Reinvestitionszins r_re = ${pct(g.r_re)}, Finanzierungszins = i = ${pct(g.i)}`,
+    "Vorteilhaft, wenn IRR bzw. MIRR ≥ Kalkulationszins."];
+  b.kpis = [kpi(e, "Interner Zinsfuß", irrTxt, r => r.IRR === null ? "" : (r.IRR >= g.i ? "pos" : "neg")),
+    kpi(e, "Modifizierter IZF", r => pct(r.MIRR), r => r.MIRR === null ? "" : (r.MIRR >= g.i ? "pos" : "neg"))];
+  b.tabellen.push(haupttabelle(e, [
+    ["Interner Zinsfuß (IRR)", ...rs.map(irrTxt)],
+    ["Modifizierter IZF (MIRR)", ...rs.map(r => pct(r.MIRR))],
+    ["Kalkulationszins i", ...rs.map(() => pct(g.i))],
+    ["Kapitalwert bei i", ...rs.map(r => eur(r.NPV))],
+  ], ["Interner Zinsfuß (IRR)"]));
+  for (const r of rs) {
+    if (r.irrs.length > 1) b.ergebnis.push({t: `${r.alt.name}: Zahlungsreihe mit mehreren Vorzeichenwechseln – mehrere interne Zinsfüße (${r.irrs.map(x => pct(x)).join(", ")}). Der IRR ist hier nicht interpretierbar; maßgeblich sind MIRR bzw. Kapitalwert.`, ton: ""});
+    else if (!r.irrs.length) b.ergebnis.push({t: `${r.alt.name}: kein interner Zinsfuß (kein Vorzeichenwechsel der Zahlungsreihe).`, ton: ""});
+    else { const ok = r.IRR >= g.i; b.ergebnis.push({t: `${r.alt.name}: IRR ${pct(r.IRR)} ${ok ? "≥" : "<"} i → ${ok ? "vorteilhaft" : "nicht vorteilhaft"}`, ton: ok ? "pos" : "neg"}); }
+  }
+  for (const p of e.paare) {
+    const na = e.namen[p.a], nb = e.namen[p.b], besser = p.npv_diff > 0 ? nb : na;
+    if (p.fisher.length) b.ergebnis.push({t: `Differenzinvestition ${nb} − ${na}: Fisher-Zins ${p.fisher.map(x => pct(x)).join(", ")}. Beim Kalkulationszins von ${pct(g.i)} ist ${besser} vorteilhafter (Kapitalwertdifferenz ${eur(Math.abs(p.npv_diff))}).`, ton: "best"});
+    else b.ergebnis.push({t: `Differenzinvestition ${nb} − ${na}: kein Schnittpunkt – ${besser} ist bei jedem Zinssatz vorteilhafter.`, ton: "best"});
+  }
+  if (e.paare.length) b.hinweise.push("Die Rangfolge nach IRR kann von der nach Kapitalwert abweichen. Für die Auswahl zwischen Alternativen gilt der Kapitalwert bzw. der IRR der Differenzinvestition (Fisher-Zins).");
+  b.grenzen = "Der IRR unterstellt Wiederanlage der Rückflüsse zum IRR selbst; der MIRR korrigiert dies. Bei nicht-konventionellen Zahlungsreihen kann es keinen oder mehrere IRR geben.";
+  b.hinweise.push(...hinweiseAllgemein(e));
+  b.charts = chIzf(e);
+  return b;
+}
+
+function bAnnuitaet(e) {
+  const b = neuerBericht("annuitaet"), rs = e.rs;
+  b.formeln = ["Annuitätenfaktor ANF = i·(1+i)^n / ((1+i)^n − 1)   (Kapitalwiedergewinnungsfaktor)",
+    "Annuität AN = C₀ · ANF", "Zerlegung: AN = Einzahlungsannuität − Auszahlungsannuität − Kapitaldienst",
+    "Kapitaldienst KD = ((I₀ + WC) − (L + WC)·(1+i)^−n) · ANF"];
+  b.kpis = [kpi(e, "Annuität p.a.", r => eur(r.AN, 0), r => tonV(r.AN))];
+  b.tabellen.push(haupttabelle(e, [
+    ["Annuitätenfaktor ANF", ...rs.map(r => de(r.ANF, 6))],
+    ["Einzahlungsannuität", ...rs.map(r => eur(r.AN_E))],
+    ["− Auszahlungsannuität", ...rs.map(r => eur(r.AN_A))],
+    ["− Kapitaldienst", ...rs.map(r => eur(r.KD))],
+    ["= Annuität p.a.", ...rs.map(r => eur(r.AN))],
+    ["Kontrolle C₀ · ANF", ...rs.map(r => eur(r.NPV * r.ANF))],
+  ], ["= Annuität p.a."]));
+  for (const r of rs) {
+    if (r.nur_kosten) b.ergebnis.push({t: `${r.alt.name}: Kostenannuität ${eur(-r.AN)} p.a. (äquivalente jährliche Kosten)`, ton: ""});
+    else b.ergebnis.push({t: `${r.alt.name}: ${r.AN >= 0 ? "vorteilhaft" : "nicht vorteilhaft"} (AN = ${eur(r.AN)} p.a.)`, ton: r.AN >= 0 ? "pos" : "neg"});
+  }
+  if (rs.length > 1) {
+    const k = beste(e, "AN"); b.ergebnis.push({t: `Höchste Annuität: ${e.namen[k]}`, ton: "best"});
+    if (new Set(rs.map(r => r.n)).size > 1) b.hinweise.push("Bei unterschiedlichen Nutzungsdauern ist der Annuitätenvergleich korrekt, wenn identische Wiederholung (Investitionskette) unterstellt wird.");
+  }
+  b.grenzen = "Gleiche Annahmen wie die Kapitalwertmethode; die Annuität ist der in jedem Jahr gleich hohe Überschuss, der dem Kapitalwert entspricht.";
+  b.hinweise.push(...hinweiseAllgemein(e));
+  b.charts = chAnnuitaet(e);
+  return b;
+}
+
+function bAmortDyn(e) {
+  const b = neuerBericht("amort_dyn"), rs = e.rs, g = e.g;
+  b.formeln = ["t_dyn = erstes Jahr, in dem Σ CFₜ·(1+i)^−t ≥ 0  (innerhalb des Jahres linear interpoliert)",
+    `Vorteilhaft, wenn t_dyn ≤ maximal akzeptierte Dauer (${de(g.t_max)} J.)`];
+  b.kpis = [kpi(e, "Amortisation dynamisch", r => amortStr(r.t_dyn, r.n), r => r.t_dyn !== null && r.t_dyn <= g.t_max ? "pos" : "neg")];
+  b.tabellen.push(haupttabelle(e, [
+    ["Amortisation statisch", ...rs.map(r => amortStr(r.t_kum, r.n))],
+    ["Amortisation dynamisch", ...rs.map(r => amortStr(r.t_dyn, r.n))],
+    ["Nutzungsdauer", ...rs.map(r => `${r.n} J.`)],
+    ["Kapitalwert", ...rs.map(r => eur(r.NPV))],
+  ], ["Amortisation dynamisch"]));
+  for (const r of rs) {
+    const ok = r.t_dyn !== null && r.t_dyn <= g.t_max;
+    b.ergebnis.push({t: `${r.alt.name}: ${ok ? "vorteilhaft" : "nicht vorteilhaft"} (dynamisch ${amortStr(r.t_dyn, r.n)})`, ton: ok ? "pos" : "neg"});
+  }
+  if (rs.length > 1) { const k = beste(e, "t_dyn", false); if (k !== null) b.ergebnis.push({t: `Kürzeste dynamische Amortisation: ${e.namen[k]}`, ton: "best"}); }
+  b.details = rs.map(r => { const d = detailJahre(r, ["Cashflow", "Barwert", "kum. Barwert", "kum. Cashflow"], t => [r.z.CF[t], r.pv[t], r.kum_pv[t], r.kum[t]]); d.titel = "Kumulierte Barwerte – " + d.titel; return d; });
+  b.grenzen = "Berücksichtigt den Zeitwert des Geldes, aber keine Zahlungen nach dem Amortisationszeitpunkt. Ein Projekt, das sich innerhalb der Nutzungsdauer dynamisch amortisiert, hat (bei konventioneller Zahlungsreihe) einen positiven Kapitalwert.";
+  b.hinweise = hinweiseAllgemein(e);
+  b.charts = chAmortDyn(e);
+  return b;
+}
+
+function bVew(e) {
+  const b = neuerBericht("vew"), rs = e.rs, g = e.g;
+  b.formeln = [`Startkonto V₀ = Eigenkapital (${eur(g.ek)}) − (I₀ + WC)`,
+    `Vₜ = Vₜ₋₁ · (1 + z) + CFₜ   mit z = Habenzins ${pct(g.h)} bei Guthaben, Sollzins ${pct(g.s_soll)} bei Schulden`,
+    "Vergleich mit der Unterlassungsalternative: Eigenkapital·(1 + Habenzins)^n"];
+  b.kpis = [kpi(e, "Vorteil ggü. Unterlassung", r => eur(r.VEW_diff, 0), r => tonV(r.VEW_diff)), kpi(e, "Vermögensendwert", r => eur(r.VEW, 0))];
+  b.tabellen.push(haupttabelle(e, [
+    ["Vermögensendwert Vₙ", ...rs.map(r => eur(r.VEW))],
+    ["Unterlassungsalternative", ...rs.map(r => eur(r.VEW_ref))],
+    ["Vorteil der Investition", ...rs.map(r => eur(r.VEW_diff))],
+    ["Nutzungsdauer", ...rs.map(r => `${r.n} J.`)],
+    ["Zum Vergleich: Kapitalendwert", ...rs.map(r => eur(r.KEW))],
+  ], ["Vorteil der Investition"]));
+  for (const r of rs) b.ergebnis.push({t: `${r.alt.name}: ${r.VEW_diff >= 0 ? "vorteilhaft" : "nicht vorteilhaft"} (Mehrvermögen ${eur(r.VEW_diff)})`, ton: r.VEW_diff >= 0 ? "pos" : "neg"});
+  if (rs.length > 1) {
+    const k = beste(e, "VEW_diff"); b.ergebnis.push({t: `Höchster Vermögenszuwachs: ${e.namen[k]}`, ton: "best"});
+    if (new Set(rs.map(r => r.n)).size > 1) b.hinweise.push("Unterschiedliche Nutzungsdauern – Endwerte beziehen sich auf verschiedene Zeitpunkte; ggf. auf den gleichen Planungshorizont auffüllen.");
+  }
+  b.details = rs.map(r => {
+    const zeilen = [["0", D0(g.ek), "", D0(r.z.CF[0]), D0(r.V[0])]];
+    for (let t = 1; t <= r.n; t++) zeilen.push([String(t), D0(r.V[t - 1]), D0(r.Vz[t]), D0(r.z.CF[t]), D0(r.V[t])]);
+    return {titel: "Vermögenskonto – " + r.alt.name, kopf: ["Jahr", "Stand Beginn", "Zinsen", "Cashflow", "Stand Ende"], zeilen, det: true};
+  });
+  b.grenzen = "Realistischer als die Kapitalwertmethode, da Soll- und Habenzins verschieden sein dürfen (Grundidee des vollständigen Finanzplans, VOFI). Steuern und Tilgungspläne werden hier nicht modelliert.";
+  b.hinweise.push(...hinweiseAllgemein(e));
+  b.charts = chVew(e);
+  return b;
+}
+
+function bEva(e) {
+  const b = neuerBericht("eva"), rs = e.rs, g = e.g, w = wacc(g);
+  const wtxt = g.wacc_modus === "kalk" ? `WACC = Kalkulationszins = ${pct(w)}` :
+    `WACC = EK-Quote·r_EK + (1 − EK-Quote)·r_FK·(1 − s) = ${pct(g.ek_quote)}·${pct(g.r_ek)} + ${pct(1 - g.ek_quote)}·${pct(g.r_fk)}·(1 − ${pct(g.steuer)}) = ${pct(w)}`;
+  b.formeln = ["EBIT  = Einzahlungen − lfd. Auszahlungen − Abschreibung D", `NOPAT = EBIT · (1 − s),  Steuersatz s = ${pct(g.steuer)}`,
+    "Gebundenes Kapital Cₜ₋₁ = Restbuchwert zu Jahresbeginn + Working Capital",
+    "EVAₜ  = NOPATₜ − WACC · Cₜ₋₁          MVA = Σ EVAₜ·(1+WACC)^−t", wtxt,
+    "Lücke-Theorem: MVA = Kapitalwert der Cashflows nach Steuern (Kontrollrechnung in der Tabelle)"];
+  b.kpis = [kpi(e, "Market Value Added", r => eur(r.MVA, 0), r => tonV(r.MVA)), kpi(e, "Ø EVA p.a.", r => eur(mittel(r.eva), 0), r => tonV(mittel(r.eva)))];
+  b.tabellen.push(haupttabelle(e, [
+    ["WACC", ...rs.map(r => pct(r.wacc))],
+    ["EVA im Jahr 1", ...rs.map(r => eur(r.eva[0]))],
+    ["Ø EVA p.a.", ...rs.map(r => eur(mittel(r.eva)))],
+    ["Summe EVA (nominal)", ...rs.map(r => eur(summe(r.eva)))],
+    ["MVA (Barwert der EVA)", ...rs.map(r => eur(r.MVA))],
+    ["Kontrolle: NPV nach Steuern", ...rs.map(r => eur(r.NPV_st))],
+    ["Zum Vergleich: NPV vor Steuern", ...rs.map(r => eur(r.NPV))],
+  ], ["MVA (Barwert der EVA)"]));
+  for (const r of rs) {
+    b.ergebnis.push({t: `${r.alt.name}: ${r.MVA >= 0 ? "wertschaffend" : "wertvernichtend"} (MVA = ${eur(r.MVA)})`, ton: r.MVA >= 0 ? "pos" : "neg"});
+    const neg = r.eva.map((v, t) => v < 0 ? t + 1 : null).filter(x => x !== null);
+    if (neg.length && r.MVA >= 0) b.hinweise.push(`${r.alt.name}: In den Jahren ${neg.slice(0, 8).join(", ")}${neg.length > 8 ? " …" : ""} ist der EVA negativ, obwohl das Projekt insgesamt Wert schafft – typisch für die Anfangsjahre bei linearer Abschreibung.`);
+  }
+  if (rs.length > 1) { const k = beste(e, "MVA"); b.ergebnis.push({t: `Höchster MVA: ${e.namen[k]}`, ton: "best"}); }
+  b.details = rs.map(r => {
+    const zeilen = [];
+    for (let t = 1; t <= r.n; t++) zeilen.push([String(t), ...[r.eva_cap[t - 1], r.eva_ebit[t - 1], r.eva_nopat[t - 1], r.eva_kk[t - 1], r.eva[t - 1], r.eva[t - 1] * Math.pow(1 + r.wacc, -t)].map(D0)]);
+    return {titel: "EVA-Verlauf – " + r.alt.name, kopf: ["Jahr", "Kapital", "EBIT", "NOPAT", "Kap.-kosten", "EVA", "Barwert EVA"], zeilen, det: true};
+  });
+  b.grenzen = "Periodenbezogene Kennzahl auf Basis von Buchwerten; einzelne Jahre können trotz insgesamt positiver Investition negativ sein. Negative EBIT werden mit Steuerersparnis gerechnet (Verlustverrechnung im Unternehmen unterstellt).";
+  b.charts = chEva(e);
+  return b;
+}
+
+function sensWerte(z) {
+  let bw, kw;
+  if (z.key === "zins") { bw = pct(z.basis); kw = pct(z.krit); }
+  else if (z.einheit === "×") { bw = "100 %"; kw = z.fk !== null ? pct(z.fk) : "–"; }
+  else if (z.einheit === "€") { const d = Math.abs(z.basis) < 10 ? 4 : 0; bw = de(z.basis, d) + " €"; kw = bad(z.krit) ? "–" : de(z.krit, d) + " €"; }
+  else { bw = `${de(z.basis, 0)} ${z.einheit}`; kw = bad(z.krit) ? "–" : `${de(z.krit, 0)} ${z.einheit}`; }
+  let delta = z.fk !== null ? pct(z.fk - 1, 1) : "–";
+  if (z.fk !== null && z.fk < 0) delta += "*";
+  return {bw, kw, delta};
+}
+
+function bSens(e) {
+  const b = neuerBericht("sens"), g = e.g;
+  b.formeln = [`Jeder Parameter wird einzeln um ± ${pct(g.sens, 0)} verändert (ceteris paribus).`,
+    "Kritischer Wert = Wert des Parameters, bei dem der Kapitalwert genau 0 wird.",
+    "Δ bis C₀ = 0  = nötige relative Änderung gegenüber dem Basiswert."];
+  e.alts.forEach((a, k) => {
+    const s = e.sens[k], r = e.rs[k];
+    b.tabellen.push({titel: `${a.name} – Kapitalwert Basis: ${eur(r.NPV)}`,
+      kopf: ["Parameter", "Basiswert", `C₀ bei −${pct(g.sens, 0)}`, `C₀ bei +${pct(g.sens, 0)}`, "kritischer Wert", "Δ bis C₀ = 0"],
+      zeilen: s.zeilen.map(z => { const w = sensWerte(z); return [z.label, w.bw, D0(z.lo), D0(z.hi), w.kw, w.delta]; }), fett: new Set()});
+    const rang = [...s.zeilen].sort((x, y) => Math.abs(y.hi - y.lo) - Math.abs(x.hi - x.lo));
+    if (rang.length) b.ergebnis.push({t: `${a.name}: stärkster Einfluss hat ${rang[0].label}${rang.length > 1 ? ", danach " + rang[1].label : ""}.`, ton: ""});
+    const knapp = s.zeilen.filter(z => z.fk !== null && z.fk > 0 && z.key !== "zins").sort((x, y) => Math.abs(x.fk - 1) - Math.abs(y.fk - 1))[0];
+    if (knapp && r.NPV >= 0) b.ergebnis.push({t: `${a.name}: geringster Puffer bei ${knapp.label} – schon eine Änderung um ${pct(knapp.fk - 1, 1)} führt zu C₀ = 0.`, ton: Math.abs(knapp.fk - 1) < g.sens ? "neg" : "pos"});
+  });
+  b.hinweise.push("* Negativer kritischer Wert: Der Kapitalwert wird durch Änderung dieses Parameters allein im sinnvollen Bereich nicht 0. Beim Zins entspricht der kritische Wert dem internen Zinsfuß.");
+  b.grenzen = "Es wird jeweils nur ein Parameter verändert; Wechselwirkungen und Wahrscheinlichkeiten bleiben unberücksichtigt (→ Szenario- bzw. Monte-Carlo-Analyse).";
+  b.charts = chSens(e);
+  return b;
+}
+
+const KENNZAHLEN = [
+  ["Nettoinvestition inkl. WC", "€", r => r.Ikap, eur],
+  ["Nutzungsdauer", "Jahre", r => r.n, v => `${v} J.`],
+  ["Ø Einzahlungen p.a.", "€", r => r.Em, eur],
+  ["Ø lfd. Auszahlungen p.a.", "€", r => r.KB, eur],
+  ["Ø Gesamtkosten p.a. (statisch)", "€", r => r.K, eur],
+  ["Stückkosten", "€", r => r.k_stueck, v => eur(v, 4)],
+  ["Ø Gewinn p.a.", "€", r => r.G, eur],
+  ["Break-even-Menge", "Einheiten", r => r.BE, v => de(v, 0)],
+  ["Rentabilität (ROI)", "%", r => r.ROI, pct],
+  ["Amortisation statisch (Ø)", "Jahre", r => r.t_avg, jahre],
+  ["Amortisation statisch (kum.)", "Jahre", r => r.t_kum, jahre],
+  ["Kapitalwert C₀", "€", r => r.NPV, eur],
+  ["Kapitalwertrate", "%", r => r.KWR, pct],
+  ["Interner Zinsfuß (IRR)", "%", r => r.IRR, pct],
+  ["Modifizierter IZF (MIRR)", "%", r => r.MIRR, pct],
+  ["Annuität p.a.", "€", r => r.AN, eur],
+  ["Amortisation dynamisch", "Jahre", r => r.t_dyn, jahre],
+  ["Vermögensendwert", "€", r => r.VEW, eur],
+  ["Vorteil ggü. Unterlassung", "€", r => r.VEW_diff, eur],
+  ["Ø EVA p.a.", "€", r => mittel(r.eva), eur],
+  ["MVA", "€", r => r.MVA, eur],
+];
+
+function bUebersicht(e) {
+  const b = neuerBericht("uebersicht"), rs = e.rs, g = e.g, ein = rs.length > 1;
+  b.kpis = [kpi(e, "Kapitalwert", r => eur(r.NPV, 0), r => tonV(r.NPV)),
+    kpi(e, "Interner Zinsfuß", irrTxt, r => r.IRR === null ? "" : (r.IRR >= g.i ? "pos" : "neg")),
+    kpi(e, "Annuität p.a.", r => eur(r.AN, 0), r => tonV(r.AN)),
+    kpi(e, "Amortisation dyn.", r => amortStr(r.t_dyn, r.n), r => r.t_dyn !== null && r.t_dyn <= g.t_max ? "pos" : "neg")];
+  b.tabellen.push(haupttabelle(e, KENNZAHLEN.map(([lab, , fn, fmt]) => [lab, ...rs.map(r => fmt(fn(r)))]), ["Kapitalwert C₀"]));
+  const ja = x => x ? "✔" : "✘";
+  const bk = beste(e, "K", false);
+  const urteil = [
+    ["Kostenvergleich", "geringste Kosten", rs.map((_, k) => ein && k === bk ? "★" : "·")],
+    ["Gewinnvergleich", "Gewinn > 0", rs.map(r => ja(r.G > 0))],
+    ["Rentabilität", "R ≥ i", rs.map(r => ja(r.ROI !== null && r.ROI >= g.i))],
+    ["Amortisation statisch", `≤ ${de(g.t_max, 1)} J.`, rs.map(r => ja(r.t_kum !== null && r.t_kum <= g.t_max))],
+    ["Kapitalwert", "C₀ ≥ 0", rs.map(r => ja(r.NPV >= 0))],
+    ["Interner Zinsfuß", "IRR ≥ i", rs.map(r => r.IRR !== null ? ja(r.IRR >= g.i) : "?")],
+    ["Annuität", "AN ≥ 0", rs.map(r => ja(r.AN >= 0))],
+    ["Amortisation dynamisch", `≤ ${de(g.t_max, 1)} J.`, rs.map(r => ja(r.t_dyn !== null && r.t_dyn <= g.t_max))],
+    ["Vermögensendwert", "Vorteil ≥ 0", rs.map(r => ja(r.VEW_diff >= 0))],
+    ["EVA / MVA", "MVA ≥ 0", rs.map(r => ja(r.MVA >= 0))],
+  ];
+  b.tabellen.push({titel: "Beurteilung (✔ erfüllt · ✘ nicht erfüllt · ? nicht eindeutig · ★ beste Alternative)",
+    kopf: ["Verfahren", "Kriterium", ...e.namen], zeilen: urteil.map(([v, k, u]) => [v, k, ...u]), fett: new Set(), symbole: true});
+  if (ein) {
+    const rang = [["Kapitalwert", "NPV", true], ["Annuität", "AN", true], ["Vermögensendwert-Vorteil", "VEW_diff", true], ["MVA", "MVA", true],
+      ["Ø Gewinn", "G", true], ["Rentabilität", "ROI", true], ["Amortisation dyn.", "t_dyn", false]];
+    b.tabellen.push({titel: "Rangfolge – beste Alternative je Kriterium", kopf: ["Kriterium", "beste Alternative"],
+      zeilen: rang.map(([l, k, m]) => { const x = beste(e, k, m); return [l, x !== null ? e.namen[x] : "–"]; }), fett: new Set()});
+    const k = beste(e, "NPV");
+    const nUnt = new Set(rs.map(r => r.n)).size > 1;
+    const ka = beste(e, "AN");
+    b.ergebnis.push({t: `Empfehlung: ${e.namen[nUnt ? ka : k]} – theoretisch maßgeblich ist der Kapitalwert${nUnt ? " bzw. bei unterschiedlichen Nutzungsdauern die Annuität" : ""}. Statische Verfahren dienen als Plausibilitäts- und Risikoindikatoren.`, ton: "best"});
+  } else {
+    const r = rs[0];
+    b.ergebnis.push({t: `Gesamturteil: Die Investition ist nach der Kapitalwertmethode ${r.NPV >= 0 ? "vorteilhaft" : "nicht vorteilhaft"} (C₀ = ${eur(r.NPV)}).`, ton: r.NPV >= 0 ? "pos" : "neg"});
+  }
+  b.hinweise = [...hinweisLaufzeit(e), ...hinweiseAllgemein(e)];
+  b.charts = chUebersicht(e);
+  return b;
+}
+
+function bEingaben(e) {
+  const g = e.g, b = {key: "eingaben", titel: "Eingabedaten", beschreibung: "", kpis: [], ergebnis: [], formeln: [], tabellen: [], details: [], hinweise: [], grenzen: "", charts: []};
+  b.tabellen.push({titel: "Allgemeine Parameter", kopf: ["Parameter", "Wert"], fett: new Set(), zeilen: [
+    ["Projekt", g.projekt], ["Kalkulationszins i", pct(g.i)], ["Reinvestitionszins (MIRR)", pct(g.r_re)],
+    ["Habenzins / Sollzins (Vermögensendwert)", `${pct(g.h)} / ${pct(g.s_soll)}`], ["Eigenkapital (Vermögensendwert)", eur(g.ek)],
+    ["Max. Amortisationsdauer", `${de(g.t_max)} Jahre`], ["Ertragsteuersatz (EVA)", pct(g.steuer)],
+    ["WACC (EVA)", pct(wacc(g)) + (g.wacc_modus === "kalk" ? " (= Kalkulationszins)" : ` (EK-Quote ${pct(g.ek_quote)}, r_EK ${pct(g.r_ek)}, r_FK ${pct(g.r_fk)})`)],
+    ["Sensitivität", `± ${pct(g.sens, 0)}`]]});
+  const A = e.alts, ab = a => a.modus === "abgeleitet";
+  b.tabellen.push(haupttabelle(e, [
+    ["Anschaffungsauszahlung", ...A.map(a => eur(a.A0))], ["Förderung / Zuschuss", ...A.map(a => eur(a.foerderung))],
+    ["Nettoinvestition I₀", ...A.map(a => eur(I0von(a)))], ["Nutzungsdauer n", ...A.map(a => `${a.n} Jahre`)],
+    ["Restwert L", ...A.map(a => eur(a.L))], ["Working Capital", ...A.map(a => eur(a.WC))],
+    ["Zahlungsreihe", ...A.map(a => ab(a) ? "aus Mengen/Preisen" : "manuell")],
+    ["Menge / Leistung p.a.", ...A.map(a => `${de(a.x, 0)} ${a.einheit}`)],
+    ["Preis / Erlös je Einheit", ...A.map(a => ab(a) ? eur(a.p, 4) : "–")],
+    ["Variable Kosten je Einheit", ...A.map(a => ab(a) ? eur(a.kv, 4) : "–")],
+    ["Fixe Betriebskosten p.a.", ...A.map(a => ab(a) ? eur(a.kfix) : "–")],
+    ["Steigerung Einzahlungen p.a.", ...A.map(a => ab(a) ? pct(a.g_e) : "–")],
+    ["Steigerung Auszahlungen p.a.", ...A.map(a => ab(a) ? pct(a.g_a) : "–")],
+  ], [], "Alternativen"));
+  b.details = e.rs.map(r => { const d = detailJahre(r, ["Einzahl.", "Auszahl.", "Rest + WC", "Cashflow", "kum. Cashflow"], t => [r.z.E[t], t ? r.z.Aus[t] : r.Ikap, r.z.R[t], r.z.CF[t], r.kum[t]]); d.titel = "Zahlungsreihe (vor Steuern) – " + d.titel; return d; });
+  return b;
+}
+
+const METHODEN = {
+  uebersicht: {titel: "Gesamtübersicht (alle Verfahren)", gruppe: "Übersicht", fn: e => bUebersicht(e)},
+  kosten: {titel: "Kostenvergleichsrechnung", gruppe: "Statische Verfahren", fn: e => bKosten(e)},
+  gewinn: {titel: "Gewinnvergleichsrechnung (inkl. Break-even)", gruppe: "Statische Verfahren", fn: e => bGewinn(e)},
+  rentabilitaet: {titel: "Rentabilitätsrechnung (ROI)", gruppe: "Statische Verfahren", fn: e => bRentabilitaet(e)},
+  amort_stat: {titel: "Statische Amortisationsrechnung (Pay-back)", gruppe: "Statische Verfahren", fn: e => bAmortStat(e)},
+  kapitalwert: {titel: "Kapitalwertmethode (NPV)", gruppe: "Dynamische Verfahren", fn: e => bKapitalwert(e)},
+  izf: {titel: "Interner Zinsfuß (IRR / MIRR)", gruppe: "Dynamische Verfahren", fn: e => bIzf(e)},
+  annuitaet: {titel: "Annuitätenmethode", gruppe: "Dynamische Verfahren", fn: e => bAnnuitaet(e)},
+  amort_dyn: {titel: "Dynamische Amortisationsrechnung", gruppe: "Dynamische Verfahren", fn: e => bAmortDyn(e)},
+  vew: {titel: "Vermögensendwertmethode (Soll-/Habenzins)", gruppe: "Dynamische Verfahren", fn: e => bVew(e)},
+  eva: {titel: "Economic Value Added (EVA / MVA)", gruppe: "Wertorientiert", fn: e => bEva(e)},
+  sens: {titel: "Sensitivitätsanalyse & kritische Werte", gruppe: "Risiko", fn: e => bSens(e)},
+};
+const REIHENFOLGE = Object.keys(METHODEN);
+
+/* =============================================================================
+   SVG-Diagramme
+   ============================================================================= */
+function niceScale(min, max, n = 5) {
+  if (!isFinite(min) || !isFinite(max)) { min = 0; max = 1; }
+  if (min === max) { const d = Math.abs(min) || 1; min -= d * 0.5; max += d * 0.5; }
+  const step0 = (max - min) / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), err = step0 / mag;
+  const step = (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1) * mag;
+  const lo = Math.floor(min / step + 1e-9) * step, hi = Math.ceil(max / step - 1e-9) * step;
+  const ticks = [];
+  for (let v = lo; v <= hi + step * 1e-6; v += step) ticks.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return {lo, hi, ticks};
+}
+const txtW = (s, px = 6.2) => String(s).length * px;
+
+function legendeLayout(items, W) {
+  const rows = []; let row = [], x = 0;
+  for (const it of items) {
+    const w = 26 + txtW(it.name, 6.1) + 14;
+    if (x + w > W - 24 && row.length) { rows.push(row); row = []; x = 0; }
+    row.push({...it, w}); x += w;
+  }
+  if (row.length) rows.push(row);
+  return rows;
+}
+function legendeSVG(rows, W, y0) {
+  let out = "";
+  rows.forEach((row, ri) => {
+    const total = row.reduce((s, it) => s + it.w, 0);
+    let x = (W - total) / 2; const y = y0 + ri * 17;
+    for (const it of row) {
+      if (it.typ === "bar") out += `<rect x="${x}" y="${y - 8}" width="14" height="10" rx="2" fill="${it.color}" opacity="${it.opacity ?? 1}"/>`;
+      else out += `<line x1="${x}" y1="${y - 3}" x2="${x + 18}" y2="${y - 3}" stroke="${it.color}" stroke-width="${it.width || 2}" ${it.dash ? `stroke-dasharray="${it.dash}"` : ""} opacity="${it.opacity ?? 1}"/>`;
+      out += `<text x="${x + 23}" y="${y + 1}" class="ch-l">${esc(it.name)}</text>`;
+      x += it.w;
+    }
+  });
+  return out;
+}
+
+/* Universelles XY-Diagramm: x kategorial ("cat") oder linear ("lin"). */
+function chartXY(o) {
+  const W = o.w || 560, H = o.h || 330;
+  const fy = o.y.fmt || D0, fx = o.x.fmt || D0;
+  const series = o.series || [], refs = o.refs || [], marks = o.marks || [];
+  const cat = o.x.type === "cat";
+  // y-Bereich
+  const ys = [0];
+  const stapel = {};
+  for (const s of series) {
+    if (s.typ === "bar") {
+      s.values.forEach((v, i) => {
+        if (bad(v)) return;
+        if (s.stack) { const k = s.stack + "|" + i, st = stapel[k] || (stapel[k] = {p: 0, n: 0}); if (v >= 0) st.p += v; else st.n += v; ys.push(st.p, st.n); }
+        else ys.push(v);
+      });
+    } else if (s.typ === "line") (cat ? s.values : s.points.map(p => p[1])).forEach(v => { if (!bad(v)) ys.push(v); });
+  }
+  refs.filter(r => r.axis === "y" && !bad(r.value)).forEach(r => ys.push(r.value));
+  marks.forEach(m => { if (!bad(m.y)) ys.push(m.y); });
+  let ymin = Math.min(...ys), ymax = Math.max(...ys);
+  const hatLabels = series.some(s => s.typ === "bar" && s.labels);
+  if (hatLabels) { const sp = (ymax - ymin) || 1; if (ymax > 0) ymax += sp * 0.07; if (ymin < 0) ymin -= sp * 0.07; }
+  const sy = niceScale(ymin, ymax, o.yTicks || 5);
+  // x-Bereich
+  let sx = null;
+  if (!cat) {
+    const xs = [];
+    series.forEach(s => s.points && s.points.forEach(p => { if (!bad(p[0])) xs.push(p[0]); }));
+    refs.filter(r => r.axis === "x" && !bad(r.value)).forEach(r => xs.push(r.value));
+    marks.forEach(m => { if (!bad(m.x)) xs.push(m.x); });
+    if (o.x.min !== undefined) xs.push(o.x.min);
+    if (o.x.max !== undefined) xs.push(o.x.max);
+    sx = niceScale(Math.min(...xs), Math.max(...xs), o.xTicks || 6);
+  }
+  // Legende
+  const leg = [];
+  for (const s of series) if (s.name && s.legend !== false) leg.push({name: s.name, color: s.color, typ: s.typ, dash: s.dash, width: s.width, opacity: s.opacity});
+  for (const r of refs) if (r.label && r.legend) leg.push({name: r.label, color: r.color || "var(--neg)", typ: "line", dash: r.dash ?? "5 4", width: 1.4});
+  const legRows = legendeLayout(leg, W);
+  const top = (o.title ? 30 : 10) + legRows.length * 17 + 6;
+  const yLabW = Math.max(...sy.ticks.map(v => txtW(fy(v), 6))) + 12;
+  const left = Math.max(44, yLabW + (o.y.label ? 16 : 0));
+  const right = cat ? 14 : 28;
+  const cats = cat ? o.x.cats : null;
+  const maxZeilen = cat ? Math.max(1, ...cats.map(c => String(c).split("\n").length)) : 1;
+  const bottom = 12 + 13 * maxZeilen + (o.x.label ? 18 : 0);
+  const pw = W - left - right, ph = H - top - bottom;
+  const Y = v => top + ph - (v - sy.lo) / (sy.hi - sy.lo) * ph;
+  const band = cat ? pw / cats.length : 0;
+  const Xc = i => left + band * (i + 0.5);
+  const X = cat ? Xc : v => left + (v - sx.lo) / (sx.hi - sx.lo) * pw;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title || "Diagramm")}" xmlns="http://www.w3.org/2000/svg">`;
+  if (o.title) svg += `<text x="${W / 2}" y="19" text-anchor="middle" class="ch-t">${esc(o.title)}</text>`;
+  svg += legendeSVG(legRows, W, (o.title ? 30 : 10) + 9);
+  // Gitter + y-Achse
+  for (const v of sy.ticks) {
+    const y = Y(v);
+    svg += `<line x1="${left}" x2="${left + pw}" y1="${y}" y2="${y}" class="${v === 0 ? "ch-z" : "ch-g"}"/>`;
+    svg += `<text x="${left - 7}" y="${y + 3.5}" text-anchor="end" class="ch-s">${esc(fy(v))}</text>`;
+  }
+  if (o.y.label) svg += `<text transform="translate(13 ${top + ph / 2}) rotate(-90)" text-anchor="middle" class="ch-s">${esc(o.y.label)}</text>`;
+  // x-Achse
+  svg += `<line x1="${left}" x2="${left + pw}" y1="${top + ph}" y2="${top + ph}" class="ch-a"/>`;
+  if (cat) {
+    const jede = Math.max(1, Math.ceil(cats.length / Math.max(1, pw / 38)));
+    cats.forEach((c, i) => {
+      if (i % jede) return;
+      const zeilen = String(c).split("\n");
+      svg += `<text x="${Xc(i)}" y="${top + ph + 15}" text-anchor="middle" class="ch-l">${zeilen.map((z, k) => `<tspan x="${Xc(i)}" dy="${k ? 13 : 0}">${esc(z)}</tspan>`).join("")}</text>`;
+    });
+  } else {
+    for (const v of sx.ticks) {
+      const x = X(v);
+      svg += `<line x1="${x}" x2="${x}" y1="${top}" y2="${top + ph}" class="ch-g"/>`;
+      svg += `<text x="${x}" y="${top + ph + 15}" text-anchor="middle" class="ch-s">${esc(fx(v))}</text>`;
+    }
+  }
+  if (o.x.label) svg += `<text x="${left + pw / 2}" y="${H - 5}" text-anchor="middle" class="ch-s">${esc(o.x.label)}</text>`;
+  // Balken
+  if (cat) {
+    const gruppen = [];
+    for (const s of series) if (s.typ === "bar") { const id = s.stack || ("_" + gruppen.length); if (!gruppen.includes(id)) gruppen.push(id); }
+    const gw = band * (o.groupWidth || 0.74), bw = gruppen.length ? gw / gruppen.length : 0;
+    const basis = {};
+    const anzahl = series.filter(s => s.typ === "bar").reduce((s, x) => s + x.values.length, 0);
+    let labelSvg = "";
+    series.filter(s => s.typ === "bar").forEach((s, si) => {
+      const gi = gruppen.indexOf(s.stack || ("_" + si));
+      s.values.forEach((v, i) => {
+        if (bad(v)) return;
+        const x0 = Xc(i) - gw / 2 + gi * bw + bw * 0.06;
+        let y0 = 0;
+        if (s.stack) { const k = s.stack + "|" + i + (v >= 0 ? "+" : "-"); y0 = basis[k] || 0; basis[k] = y0 + v; }
+        const ya = Y(y0 + v), yb = Y(y0), h = Math.abs(yb - ya);
+        const farbe = s.colors ? s.colors[i] : s.color;
+        svg += `<rect x="${x0}" y="${Math.min(ya, yb)}" width="${bw * 0.88}" height="${Math.max(h, 0.6)}" rx="1.5" fill="${farbe}" opacity="${s.opacity ?? 1}"><title>${esc((s.name ? s.name + " – " : "") + String(cats[i]).replace("\n", " ") + ": " + (s.tip || fy)(v))}</title></rect>`;
+        if (s.labels && anzahl <= 30) {
+          const lx = x0 + bw * 0.44, ly = v >= 0 ? ya - 4 : ya + 11;
+          labelSvg += `<text x="${lx}" y="${ly}" text-anchor="middle" class="ch-v">${esc(s.labels(v))}</text>`;
+        }
+      });
+    });
+    svg += labelSvg;
+  }
+  // Referenzlinien
+  for (const r of refs) {
+    if (bad(r.value)) continue;
+    const col = r.color || "var(--neg)", dash = r.dash ?? "5 4";
+    if (r.axis === "y") {
+      const y = Y(r.value);
+      svg += `<line x1="${left}" x2="${left + pw}" y1="${y}" y2="${y}" stroke="${col}" stroke-width="${r.width || 1.3}" stroke-dasharray="${dash}" opacity="${r.opacity ?? 1}"/>`;
+      if (r.label && !r.legend) svg += `<text x="${left + pw - 4}" y="${y - 4}" text-anchor="end" class="ch-s" style="fill:${col}">${esc(r.label)}</text>`;
+    } else {
+      const x = X(r.value);
+      svg += `<line x1="${x}" x2="${x}" y1="${top}" y2="${top + ph}" stroke="${col}" stroke-width="${r.width || 1.3}" stroke-dasharray="${dash}" opacity="${r.opacity ?? 1}"/>`;
+      if (r.label && !r.legend) svg += `<text x="${x + 4}" y="${top + 11}" class="ch-s" style="fill:${col}">${esc(r.label)}</text>`;
+    }
+  }
+  // Linien
+  for (const s of series.filter(s => s.typ === "line")) {
+    const pts = cat ? s.values.map((v, i) => [i, v]) : s.points;
+    const ok = pts.filter(p => !bad(p[1]) && !bad(p[0]));
+    if (!ok.length) continue;
+    const d = ok.map((p, k) => `${k ? "L" : "M"}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(" ");
+    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width || 2}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ""} opacity="${s.opacity ?? 1}" stroke-linejoin="round"/>`;
+    if (s.marker) for (const p of ok)
+      svg += `<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="2.8" fill="${s.color}" opacity="${s.opacity ?? 1}"><title>${esc((s.name || "") + " – " + (cat ? String(cats[p[0]]).replace("\n", " ") : (s.tipX || fx)(p[0])) + ": " + fy(p[1]))}</title></circle>`;
+  }
+  // Markierungen
+  for (const m of marks) {
+    if (bad(m.x) || bad(m.y)) continue;
+    const x = X(m.x), y = Y(m.y), c = m.color || "var(--ink)";
+    if (m.shape === "diamond") svg += `<path d="M${x} ${y - 5.5}L${x + 5.5} ${y}L${x} ${y + 5.5}L${x - 5.5} ${y}Z" fill="${c}" stroke="var(--panel)" stroke-width="1"/>`;
+    else svg += `<circle cx="${x}" cy="${y}" r="4.2" fill="${c}" stroke="var(--panel)" stroke-width="1.2"/>`;
+    if (m.label) {
+      const dx = m.dx ?? 7, dy = m.dy ?? -7;
+      const anchor = x + dx + txtW(m.label, 6) > left + pw ? "end" : "start";
+      svg += `<text x="${anchor === "end" ? x - 7 : x + dx}" y="${y + dy}" text-anchor="${anchor}" class="ch-v" style="fill:${c}">${esc(m.label)}</text>`;
+    }
+  }
+  return svg + "</svg>";
+}
+
+/* Tornado-Diagramm (horizontale Balken um den Basis-Kapitalwert) */
+function chartTornado(o) {
+  const W = o.w || 560, zeilen = o.zeilen, rowH = 26;
+  const leg = [{name: o.loLabel, color: NEG, typ: "bar"}, {name: o.hiLabel, color: POS, typ: "bar", opacity: .85}];
+  const legRows = legendeLayout(leg, W);
+  const top = 30 + legRows.length * 17 + 20, bottom = 26;
+  const H = top + bottom + Math.max(1, zeilen.length) * rowH;
+  const vals = [o.basis, 0]; zeilen.forEach(z => vals.push(z.lo, z.hi));
+  const sx = niceScale(Math.min(...vals), Math.max(...vals), 5);
+  const left = Math.min(190, Math.max(100, Math.max(...zeilen.map(z => txtW(z.label, 6.1))) + 16)), right = 32, pw = W - left - right;
+  const X = v => left + (v - sx.lo) / (sx.hi - sx.lo) * pw;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<text x="${W / 2}" y="19" text-anchor="middle" class="ch-t">${esc(o.title)}</text>` + legendeSVG(legRows, W, 39);
+  for (const v of sx.ticks) {
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${top}" y2="${H - bottom}" class="${v === 0 ? "ch-z" : "ch-g"}"/>`;
+    svg += `<text x="${X(v)}" y="${H - bottom + 15}" text-anchor="middle" class="ch-s">${esc(D0(v))}</text>`;
+  }
+  zeilen.forEach((z, i) => {
+    const y = top + i * rowH + 4, h = rowH - 8;
+    const seg = (v, c, op, lab) => {
+      const a = Math.min(X(o.basis), X(v)), w = Math.abs(X(v) - X(o.basis));
+      return `<rect x="${a}" y="${y}" width="${Math.max(w, .6)}" height="${h}" fill="${c}" opacity="${op}" rx="1.5"><title>${esc(z.label + " " + lab + ": Kapitalwert " + eur(v, 0))}</title></rect>`;
+    };
+    svg += seg(z.lo, NEG, 1, o.loLabel) + seg(z.hi, POS, .85, o.hiLabel);
+    svg += `<text x="${left - 8}" y="${y + h / 2 + 4}" text-anchor="end" class="ch-l">${esc(z.label)}</text>`;
+  });
+  svg += `<line x1="${X(o.basis)}" x2="${X(o.basis)}" y1="${top - 3}" y2="${H - bottom}" stroke="var(--ink)" stroke-width="1.4"/>`;
+  svg += `<text x="${X(o.basis)}" y="${top - 6}" text-anchor="middle" class="ch-v">Basis ${esc(D0(o.basis))}</text>`;
+  return svg + "</svg>";
+}
+
+const kurz = (s, k = 22) => s.length <= k ? s : s.slice(0, k - 1) + "…";
+const fEur0 = v => de(v, 0);
+const fPct1 = v => de(v * 100, 1) + " %";
+const C = (svg, full = false) => ({svg, full});
+
+function chKosten(e) {
+  const rs = e.rs, namen = rs.map(r => kurz(r.alt.name, 18)), out = [];
+  const teile = [["Fixe Betriebskosten", r => r.fixm || 0, "#93c5fd"], ["Variable Kosten", r => r.varm || 0, "#3b82f6"],
+    ["Lfd. Kosten (nicht aufgeteilt)", r => r.abgeleitet ? 0 : r.KB, "#60a5fa"], ["Kalk. Abschreibung", r => r.D, "#fb923c"], ["Kalk. Zinsen", r => r.Z, "#c2410c"]];
+  const series = teile.filter(([, fn]) => rs.some(r => Math.abs(fn(r)) > 0)).map(([n, fn, c]) => ({typ: "bar", name: n, color: c, stack: "k", values: rs.map(fn)}));
+  out.push(C(chartXY({title: "Ø Gesamtkosten pro Jahr", x: {type: "cat", cats: namen}, y: {fmt: fEur0, label: "€ / Jahr"}, series, groupWidth: .5,
+    marks: rs.map((r, k) => ({x: k, y: r.K, label: eur(r.K, 0), color: "var(--ink)", dx: -18, dy: -9}))})));
+  const abg = rs.map((r, k) => k).filter(k => rs[k].abgeleitet);
+  if (abg.length) {
+    let xmax = Math.max(Math.max(...abg.map(k => rs[k].alt.x)) * 2, 1);
+    e.paare.forEach(p => { if (p.xkrit) xmax = Math.max(xmax, p.xkrit * 1.3); });
+    const xs = Array.from({length: 51}, (_, j) => xmax * j / 50);
+    const marks = abg.map(k => ({x: rs[k].alt.x, y: rs[k].K, color: PAL[k]}));
+    e.paare.forEach(p => { if (p.xkrit) { const ra = rs[p.a]; marks.push({x: p.xkrit, y: ra.Kf + ra.kv_m * p.xkrit, shape: "diamond", label: `x* = ${de(p.xkrit, 0)}`, color: "var(--ink)", dy: 16}); } });
+    out.push(C(chartXY({title: "Kostenfunktionen K(x) und kritische Menge", x: {type: "lin", fmt: fEur0, label: `Menge pro Jahr [${rs[abg[0]].alt.einheit}]`, min: 0},
+      y: {fmt: fEur0, label: "€ / Jahr"}, series: abg.map(k => ({typ: "line", name: kurz(rs[k].alt.name), color: PAL[k], points: xs.map(x => [x, rs[k].Kf + rs[k].kv_m * x])})), marks})));
+  } else {
+    out.push(C(chartXY({title: "Stückkosten", x: {type: "cat", cats: namen}, y: {fmt: v => de(v, 2)},
+      series: [{typ: "bar", colors: PAL, values: rs.map(r => r.k_stueck), labels: v => de(v, 2)}]})));
+  }
+  return out;
+}
+
+function chGewinn(e) {
+  const rs = e.rs, out = [];
+  out.push(C(chartXY({title: "Ø Erlöse, Kosten und Gewinn pro Jahr", x: {type: "cat", cats: ["Ø Erlöse", "Ø Gesamtkosten", "Ø Gewinn"]}, y: {fmt: fEur0},
+    series: rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: [r.Em, r.K, r.G], labels: fEur0}))})));
+  const abg = rs.map((r, k) => k).filter(k => rs[k].abgeleitet);
+  if (abg.length) {
+    let xmax = 1;
+    abg.forEach(k => { xmax = Math.max(xmax, rs[k].alt.x * 1.6, (rs[k].BE || 0) * 1.3); });
+    const xs = Array.from({length: 51}, (_, j) => xmax * j / 50), series = [], marks = [], refs = [];
+    abg.forEach(k => {
+      const r = rs[k];
+      series.push({typ: "line", name: "Erlöse " + kurz(r.alt.name, 16), color: PAL[k], points: xs.map(x => [x, r.p_m * x])});
+      series.push({typ: "line", name: "Kosten " + kurz(r.alt.name, 16), color: PAL[k], dash: "6 4", points: xs.map(x => [x, r.Kf + r.kv_m * x])});
+      if (r.BE) marks.push({x: r.BE, y: r.p_m * r.BE, shape: "diamond", label: `BE ${de(r.BE, 0)}`, color: PAL[k], dy: 15});
+      refs.push({axis: "x", value: r.alt.x, color: PAL[k], dash: "2 3", opacity: .7});
+    });
+    out.push(C(chartXY({title: "Break-even-Analyse (Ø-Jahr)", x: {type: "lin", fmt: fEur0, label: "Menge pro Jahr", min: 0}, y: {fmt: fEur0}, series, marks, refs})));
+  }
+  return out;
+}
+
+function chRentabilitaet(e) {
+  return [C(chartXY({title: "Rentabilität (Gewinn vor Zinsen / Ø gebundenes Kapital)", x: {type: "cat", cats: e.rs.map(r => kurz(r.alt.name, 22))}, y: {fmt: fPct1},
+    series: [{typ: "bar", colors: PAL, values: e.rs.map(r => r.ROI), labels: v => de(v * 100, 2) + " %", tip: v => pct(v)}], groupWidth: .5,
+    refs: [{axis: "y", value: e.g.i, label: `Kalkulationszins ${pct(e.g.i)}`, legend: true}]}), true)];
+}
+
+function chAmortStat(e) {
+  const g = e.g;
+  return [C(chartXY({title: "Statische Amortisation – kumulierte Cashflows (unverzinst)", x: {type: "lin", fmt: v => de(v, 0), label: "Jahr", min: 0}, y: {fmt: fEur0, label: "€"},
+    series: e.rs.map((r, k) => ({typ: "line", name: kurz(r.alt.name, 30), color: PAL[k], marker: true, points: r.kum.map((v, t) => [t, v]), tipX: t => "Jahr " + t})),
+    marks: e.rs.filter(r => r.t_kum !== null).map(r => ({x: r.t_kum, y: 0, color: PAL[e.rs.indexOf(r)], label: `${de(r.t_kum, 1)} J.`, dy: -9 - 13 * e.rs.indexOf(r)})),
+    refs: [{axis: "x", value: g.t_max, label: `max. Dauer ${de(g.t_max, 1)} J.`, legend: true}]}), true)];
+}
+
+function chKapitalwert(e) {
+  const nmax = Math.max(...e.rs.map(r => r.n)), cats = Array.from({length: nmax + 1}, (_, t) => String(t));
+  return [
+    C(chartXY({title: "Barwerte der Zahlungen je Jahr", x: {type: "cat", cats, label: "Jahr"}, y: {fmt: fEur0},
+      series: e.rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: cats.map((_, t) => t <= r.n ? r.pv[t] : null)}))}), true),
+    C(chartXY({title: `Kapitalwert C₀ (i = ${pct(e.g.i)})`, x: {type: "cat", cats: e.rs.map(r => kurz(r.alt.name, 18))}, y: {fmt: fEur0}, groupWidth: .5,
+      series: [{typ: "bar", colors: e.rs.map(r => r.NPV >= 0 ? POS : NEG), values: e.rs.map(r => r.NPV), labels: v => de(v, 0) + " €"}]})),
+    C(chartXY({title: "Kumulierte Barwerte", x: {type: "lin", fmt: v => de(v, 0), label: "Jahr", min: 0}, y: {fmt: fEur0},
+      series: e.rs.map((r, k) => ({typ: "line", name: kurz(r.alt.name), color: PAL[k], marker: true, points: r.kum_pv.map((v, t) => [t, v]), tipX: t => "Jahr " + t}))})),
+  ];
+}
+
+function chIzf(e) {
+  const g = e.g;
+  const alleIrr = e.rs.flatMap(r => r.irrs);
+  const oben = Math.max(0.3, g.i * 2.5, ...alleIrr.filter(x => x > 0).map(x => Math.min(x * 1.5, 2)));
+  const unten = Math.min(0, ...alleIrr.filter(x => x < 0).map(x => x * 1.2));
+  const zs = Array.from({length: 121}, (_, j) => unten + (oben - unten) * j / 120);
+  const marks = [];
+  e.rs.forEach((r, k) => r.irrs.forEach(x => { if (x >= unten && x <= oben) marks.push({x, y: 0, color: PAL[k], label: `IRR ${pct(x, 1)}`, dy: -9 - 13 * k}); }));
+  e.paare.forEach(p => p.fisher.forEach(x => { if (x >= unten && x <= oben) marks.push({x, y: npv(e.rs[p.a].z.CF, x), shape: "diamond", color: "var(--ink)", label: `Fisher ${pct(x, 1)}`}); }));
+  return [C(chartXY({title: "Kapitalwert in Abhängigkeit vom Zinssatz", x: {type: "lin", fmt: fPct1, label: "Zinssatz"}, y: {fmt: fEur0, label: "Kapitalwert [€]"},
+    series: e.rs.map((r, k) => ({typ: "line", name: kurz(r.alt.name, 30), color: PAL[k], points: zs.map(z => [z, npv(r.z.CF, z)])})),
+    marks, refs: [{axis: "x", value: g.i, label: `Kalkulationszins ${pct(g.i)}`, legend: true}]}), true)];
+}
+
+function chAnnuitaet(e) {
+  return [C(chartXY({title: `Annuitätenmethode – jährliche Äquivalente (i = ${pct(e.g.i)})`, x: {type: "cat", cats: ["Einzahlungs-\nannuität", "Auszahlungs-\nannuität", "Kapital-\ndienst", "Annuität"]},
+    y: {fmt: fEur0, label: "€ / Jahr"}, series: e.rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: [r.AN_E, -r.AN_A, -r.KD, r.AN], labels: fEur0}))}), true)];
+}
+
+function chAmortDyn(e) {
+  const series = [];
+  e.rs.forEach((r, k) => {
+    series.push({typ: "line", name: kurz(r.alt.name, 24) + " (diskontiert)", color: PAL[k], marker: true, points: r.kum_pv.map((v, t) => [t, v]), tipX: t => "Jahr " + t});
+    series.push({typ: "line", name: kurz(r.alt.name, 24) + " (unverzinst)", color: PAL[k], dash: "5 4", opacity: .5, points: r.kum.map((v, t) => [t, v])});
+  });
+  return [C(chartXY({title: "Dynamische Amortisation – kumulierte Barwerte", x: {type: "lin", fmt: v => de(v, 0), label: "Jahr", min: 0}, y: {fmt: fEur0, label: "€"}, series,
+    marks: e.rs.map((r, k) => r.t_dyn === null ? null : {x: r.t_dyn, y: 0, color: PAL[k], label: `${de(r.t_dyn, 1)} J.`, dy: 16 + 13 * k}).filter(Boolean),
+    refs: [{axis: "x", value: e.g.t_max, label: `max. Dauer ${de(e.g.t_max, 1)} J.`, legend: true}]}), true)];
+}
+
+function chVew(e) {
+  const g = e.g, nmax = Math.max(...e.rs.map(r => r.n));
+  const series = e.rs.map((r, k) => ({typ: "line", name: kurz(r.alt.name, 30), color: PAL[k], marker: true, points: r.V.map((v, t) => [t, v]), tipX: t => "Jahr " + t}));
+  series.push({typ: "line", name: "Unterlassung (EK zum Habenzins)", color: "var(--ink-3)", dash: "6 4", points: Array.from({length: nmax + 1}, (_, t) => [t, g.ek * Math.pow(1 + g.h, t)])});
+  return [C(chartXY({title: `Vermögenskonto (Haben ${pct(g.h)}, Soll ${pct(g.s_soll)})`, x: {type: "lin", fmt: v => de(v, 0), label: "Jahr", min: 0}, y: {fmt: fEur0, label: "Kontostand [€]"}, series}), true)];
+}
+
+function chEva(e) {
+  const nmax = Math.max(...e.rs.map(r => r.n)), cats = Array.from({length: nmax}, (_, t) => String(t + 1));
+  return [
+    C(chartXY({title: `Economic Value Added je Jahr (WACC ${pct(wacc(e.g))})`, x: {type: "cat", cats, label: "Jahr"}, y: {fmt: fEur0},
+      series: e.rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: cats.map((_, t) => t < r.n ? r.eva[t] : null)}))})),
+    C(chartXY({title: "MVA = Kapitalwert nach Steuern", x: {type: "cat", cats: ["MVA", "NPV n. St.", "NPV v. St."]}, y: {fmt: fEur0},
+      series: e.rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: [r.MVA, r.NPV_st, r.NPV], labels: fEur0}))})),
+  ];
+}
+
+const SPINNE = ["#2563eb", "#ea580c", "#16a34a", "#9333ea", "#dc2626", "#0891b2", "#a16207"];
+function chSens(e) {
+  const d = e.g.sens, out = [];
+  e.alts.forEach((a, k) => {
+    const s = e.sens[k], r = e.rs[k];
+    const zeilen = [...s.zeilen].sort((x, y) => Math.abs(y.hi - y.lo) - Math.abs(x.hi - x.lo));
+    out.push(C(chartTornado({title: `Tornado – ${kurz(a.name, 34)}`, zeilen, basis: r.NPV, loLabel: `Parameter −${pct(d, 0)}`, hiLabel: `Parameter +${pct(d, 0)}`})));
+    out.push(C(chartXY({title: `Spinnendiagramm – ${kurz(a.name, 30)}`, x: {type: "lin", fmt: v => de(v * 100, 0) + " %", label: "Änderung des Parameters"}, y: {fmt: fEur0, label: "Kapitalwert [€]"},
+      series: s.zeilen.map((z, j) => ({typ: "line", name: z.label, color: SPINNE[j % SPINNE.length], marker: true, points: s.stufen.map((st, q) => [st, z.spinne[q]])}))})));
+  });
+  return out;
+}
+
+function chUebersicht(e) {
+  const g = e.g, rs = e.rs, namen = rs.map(r => kurz(r.alt.name, 18));
+  return [
+    C(chartXY({title: "Kapitalwert [€]", x: {type: "cat", cats: namen}, y: {fmt: fEur0}, groupWidth: .5,
+      series: [{typ: "bar", colors: rs.map(r => r.NPV >= 0 ? POS : NEG), values: rs.map(r => r.NPV), labels: fEur0}]})),
+    C(chartXY({title: "Renditekennzahlen", x: {type: "cat", cats: ["IRR", "MIRR", "ROI (statisch)"]}, y: {fmt: fPct1},
+      series: rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: [r.IRR, r.MIRR, r.ROI], labels: v => de(v * 100, 1) + "%", tip: v => pct(v)})),
+      refs: [{axis: "y", value: g.i, label: `i = ${pct(g.i)}`, legend: true}]})),
+    C(chartXY({title: "Amortisationsdauer [Jahre] (fehlend = nicht erreicht)", x: {type: "cat", cats: ["statisch (Ø)", "statisch (kum.)", "dynamisch"]}, y: {fmt: v => de(v, 0)},
+      series: rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: [r.t_avg, r.t_kum, r.t_dyn], labels: v => de(v, 1), tip: v => jahre(v)})),
+      refs: [{axis: "y", value: g.t_max, label: `max. ${de(g.t_max, 1)} J.`, legend: true}]})),
+    C(chartXY({title: "Jährliche Größen [€/Jahr]", x: {type: "cat", cats: ["Annuität", "Ø Gewinn", "Ø EVA"]}, y: {fmt: fEur0},
+      series: rs.map((r, k) => ({typ: "bar", name: kurz(r.alt.name), color: PAL[k], values: [r.AN, r.G, mittel(r.eva)], labels: fEur0}))})),
+  ];
+}
+
+/* =============================================================================
+   Darstellung (HTML) und Text-Export
+   ============================================================================= */
+function tabelleHTML(t) {
+  const symb = c => c === "✔" ? "ok" : c === "✘" ? "no" : c === "★" ? "star" : "";
+  let h = `<div class="tw"><table class="kt${t.det ? " det" : ""}${t.symbole ? " sym" : ""}"><thead><tr>${t.kopf.map(k => `<th scope="col">${esc(k)}</th>`).join("")}</tr></thead><tbody>`;
+  for (const z of t.zeilen) {
+    if (z === null) { h += `<tr class="gap"><td colspan="${t.kopf.length}"></td></tr>`; continue; }
+    const fett = t.fett && t.fett.has(z[0]);
+    h += `<tr${fett ? ' class="b"' : ""}>` + z.map((c, i) => {
+      const cls = t.symbole && i >= 2 ? symb(c) : (i > 0 && /^-\d/.test(c) ? "neg" : "");
+      return i === 0 && !t.det ? `<td>${esc(c)}</td>` : `<td${cls ? ` class="${cls}"` : ""}>${esc(c)}</td>`;
+    }).join("") + "</tr>";
+  }
+  return h + "</tbody></table></div>";
+}
+
+function berichtHTML(b, e, opt = {}) {
+  let h = `<article class="report panel${opt.first ? " first" : ""}">`;
+  h += `<h2>${esc(b.titel)}</h2><div class="sub">${esc(e.g.projekt)} · Kalkulationszins ${pct(e.g.i)} · ${e.erstellt.toLocaleDateString("de-DE")}</div>`;
+  if (opt.druck && b.beschreibung) h += `<p style="margin:8px 0 0;color:var(--ink-2)">${esc(b.beschreibung)}</p>`;
+  if (b.kpis.length) {
+    h += `<div class="kpis">` + e.alts.map((a, k) => `<div class="kpi" style="--c:${PAL[k]}"><div class="n" title="${esc(a.name)}">${esc(a.name)}</div>` +
+      b.kpis.map(kp => `<div class="row"><span>${esc(kp.label)}</span><b class="${kp.werte[k].ton}">${esc(kp.werte[k].v)}</b></div>`).join("") + `</div>`).join("") + `</div>`;
+  }
+  if (b.ergebnis.length) h += `<ul class="verdicts">${b.ergebnis.map(x => `<li class="${x.ton}">${esc(x.t)}</li>`).join("")}</ul>`;
+  if (b.charts.length) h += `<div class="charts">${b.charts.map(c => `<div class="chart${c.full ? " full" : ""}">${c.svg}</div>`).join("")}</div>`;
+  b.tabellen.forEach(t => { h += `<h3>${esc(t.titel || "Kennzahlen")}</h3>` + tabelleHTML(t); });
+  if (b.hinweise.length) h += `<div class="notes">${b.hinweise.map(x => `<div class="note">${esc(x)}</div>`).join("")}</div>`;
+  if (b.formeln.length) h += `<details${opt.druck ? " open" : ""}><summary>Formeln</summary><pre class="formeln">${esc(b.formeln.join("\n"))}</pre></details>`;
+  b.details.forEach(d => { h += `<details${opt.druck ? " open" : ""}><summary>${esc(d.titel)}</summary>${tabelleHTML(d)}</details>`; });
+  if (b.grenzen) h += `<p class="grenzen"><strong>Grenzen der Methode:</strong> ${esc(b.grenzen)}</p>`;
+  return h + "</article>";
+}
+
+/* Text */
+function wrapText(t, width = BREITE, indent = "") {
+  const out = []; let line = indent;
+  for (const w of String(t).split(/\s+/)) {
+    if (!w) continue;
+    if ((line + (line.trim() ? " " : "") + w).length > width && line.trim()) { out.push(line); line = indent + w; }
+    else line += (line.trim() ? " " : "") + w;
+  }
+  if (line.trim()) out.push(line);
+  return out.join("\n");
+}
+function tabelleText(t) {
+  const rows = t.zeilen.filter(z => z !== null);
+  const w0 = Math.min(40, Math.max(t.kopf[0].length, ...rows.map(z => z[0].length)) + 2);
+  const ws = t.kopf.slice(1).map((k, i) => Math.max(k.length, ...rows.map(z => String(z[i + 1]).length)) + 2);
+  const zeile = z => z[0].slice(0, w0 - 1).padEnd(w0) + z.slice(1).map((c, i) => String(c).padStart(ws[i])).join("");
+  const out = [zeile(t.kopf), "-".repeat(w0 + ws.reduce((a, b) => a + b, 0))];
+  for (const z of t.zeilen) out.push(z === null ? "" : zeile(z));
+  return out.join("\n");
+}
+function berichtText(b, e) {
+  const L = ["=".repeat(BREITE), b.titel.toUpperCase(), "=".repeat(BREITE),
+    `Projekt: ${e.g.projekt}`, `Kalkulationszins: ${pct(e.g.i)}    Alternativen: ${e.namen.join(", ")}`,
+    `Erstellt: ${e.erstellt.toLocaleString("de-DE")}`, ""];
+  if (b.beschreibung) L.push(wrapText(b.beschreibung), "");
+  if (b.formeln.length) L.push("Formeln", ...b.formeln.map(f => "  " + f), "");
+  b.tabellen.forEach(t => L.push(t.titel || "Kennzahlen", tabelleText(t), ""));
+  if (b.ergebnis.length) { L.push("Ergebnis"); b.ergebnis.forEach(x => L.push(wrapText(x.t, BREITE, "  "))); L.push(""); }
+  b.details.forEach(d => L.push(d.titel, tabelleText(d), ""));
+  b.hinweise.forEach(x => L.push(wrapText("HINWEIS: " + x), ""));
+  if (b.grenzen) L.push("Grenzen der Methode", wrapText(b.grenzen, BREITE, "  "), "");
+  return L.join("\n");
+}
+
+/* =============================================================================
+   Vorlagen
+   ============================================================================= */
+const ZINS_VORLAGEN = [["– Richtwert wählen –", null], ["2 % – sehr risikoarm / öffentliche Hand", 2], ["4 % – konservativ, z. B. Energie-/Gebäudeinvestitionen", 4],
+  ["6 % – typischer Mischzins Mittelstand", 6], ["8 % – Unternehmen mit erhöhtem Risiko", 8], ["12 % – risikoreiche / innovative Projekte", 12]];
+const ND_VORLAGEN = [["– Richtwert wählen –", null], ["Pkw: 6 Jahre", 6], ["Lkw: 9 Jahre", 9], ["Büromöbel: 13 Jahre", 13], ["Photovoltaikanlage: 20 Jahre", 20],
+  ["Heizungsanlage (wirtschaftlich): 20 Jahre", 20], ["Betriebsgebäude (3 % AfA): 33 Jahre", 33]];
+const G_STD = {projekt: "Investitionsprojekt", i: 6, r_re: 6, h: 2, s_soll: 8, ek: 0, t_max: 5, steuer: 30, wacc_modus: "kalk", ek_quote: 40, r_ek: 10, r_fk: 5, sens: 20};
+const A_STD = {name: "Alternative", A0: 0, foerderung: 0, n: 10, L: 0, WC: 0, einheit: "Stück", x: 0, p: 0, kv: 0, kfix: 0, g_e: 0, g_a: 0, modus: "abgeleitet"};
+const _g = o => ({...G_STD, ...o}), _a = o => ({...A_STD, ...o});
+const VORLAGEN = {
+  "Beispiel: Maschinenvergleich (Industrie)": {glob: _g({projekt: "Ersatz einer Fertigungsmaschine", i: 6, r_re: 6, ek: 50000, t_max: 5}),
+    alts: [_a({name: "Maschine A (Standard)", A0: 120000, n: 8, L: 10000, x: 10000, p: 12, kv: 6.5, kfix: 25000}),
+      _a({name: "Maschine B (automatisiert)", A0: 180000, n: 8, L: 20000, x: 10000, p: 12, kv: 5.0, kfix: 28000}), null]},
+  "Beispiel: Heizung – Gas-Brennwert vs. Wärmepumpe": {glob: _g({projekt: "Heizungserneuerung (reine Kostenbetrachtung)", i: 4, r_re: 4, t_max: 10, sens: 20}),
+    alts: [_a({name: "Gas-Brennwert", A0: 12000, n: 20, einheit: "kWh Wärme", x: 20000, p: 0, kv: 0.13, kfix: 350, g_a: 3}),
+      _a({name: "Wärmepumpe", A0: 32000, foerderung: 9600, n: 20, einheit: "kWh Wärme", x: 20000, p: 0, kv: 0.09, kfix: 250, g_a: 2}), null]},
+  "Beispiel: Photovoltaik – ohne vs. mit Speicher": {glob: _g({projekt: "PV-Anlage 30 kWp (Eigenverbrauch + Einspeisung)", i: 4, r_re: 4, ek: 20000, t_max: 12}),
+    alts: [_a({name: "PV 30 kWp", A0: 39000, n: 20, einheit: "kWh", x: 28500, p: 0.17, kfix: 600, g_e: 1, g_a: 2}),
+      _a({name: "PV 30 kWp + Speicher", A0: 55000, n: 20, einheit: "kWh", x: 28500, p: 0.21, kfix: 800, g_e: 1, g_a: 2}), null]},
+  "Beispiel: Einsparinvestition – LED-Umrüstung": {glob: _g({projekt: "LED-Umrüstung Verwaltungsgebäude", i: 3, r_re: 3, t_max: 5}),
+    alts: [_a({name: "LED-Umrüstung", A0: 25000, n: 15, einheit: "kWh eingespart", x: 40000, p: 0.28, g_e: 2}), null, null]},
+  "Beispiel: Einmalbetrag vs. monatliche Raten (10 Jahre)": {glob: _g({projekt: "50.000 € sofort oder 500 €/Monat über 10 Jahre", i: 3, r_re: 3, h: 3, ek: 50000, t_max: 10, steuer: 0}),
+    alts: [_a({name: "Raten statt Einmalbetrag", A0: 50000, n: 10, einheit: "Jahr", x: 0, modus: "manuell", man: Array.from({length: 10}, () => [6082.06, 0])}), null, null]},
+  "Standardwerte (eigene Eingaben)": {glob: _g({}), alts: [_a({name: "Alternative 1", A0: 10000, x: 1000, p: 10, kv: 5, kfix: 2000}), null, null]},
+};
+
+/* =============================================================================
+   Benutzeroberfläche
+   ============================================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function infoIcon(text) { return text ? `<span class="info" tabindex="0" aria-label="Info">i<span class="tip" role="tooltip">${esc(text)}</span></span>` : "<span></span>"; }
+function feld(k, label, unit, hint, alt) {
+  const id = (alt === undefined ? "g_" : `a${alt}_`) + k;
+  return `<div class="f"><span class="l"><label for="${id}">${esc(label)}</label></span><input type="text" inputmode="decimal" id="${id}" data-k="${k}" ${alt === undefined ? "data-g" : `data-alt="${alt}"`} autocomplete="off"><span class="u">${esc(unit || "")}</span>${infoIcon(hint)}</div>`;
+}
+
+function baueAllgemein() {
+  return `<div class="pane" id="pane-g" role="tabpanel">
+  <fieldset><legend>Projekt</legend>
+    <div class="wide"><span><label for="g_projekt">Bezeichnung</label></span><input type="text" id="g_projekt" data-k="projekt" data-g data-text></div>
+  </fieldset>
+  <fieldset><legend>Zinssätze</legend>
+    ${feld("i", "Kalkulationszins i", "%", "Mindestverzinsung (Opportunitätskosten) für das eingesetzte Kapital. Grundlage für kalkulatorische Zinsen, Kapitalwert, Annuität und dynamische Amortisation.")}
+    <select class="preset" id="zinsPreset" aria-label="Richtwert für den Kalkulationszins">${ZINS_VORLAGEN.map(([l]) => `<option>${esc(l)}</option>`).join("")}</select>
+    ${feld("r_re", "Reinvestitionszins (MIRR)", "%", "Zinssatz, zu dem Rückflüsse wieder angelegt werden können (für den modifizierten internen Zinsfuß). Üblich: gleich dem Kalkulationszins.")}
+    ${feld("h", "Habenzins (Vermögensendwert)", "%", "Zinssatz für Guthaben auf dem Vermögenskonto – z. B. die erreichbare Anlagerendite nach Steuern.")}
+    ${feld("s_soll", "Sollzins (Vermögensendwert)", "%", "Zinssatz für Kredite/Schulden auf dem Vermögenskonto.")}
+    ${feld("ek", "Eigenkapital (Vermögensendwert)", "€", "Verfügbare Eigenmittel zu Beginn. Der Rest der Investition wird zum Sollzins finanziert. Vergleichsmaßstab: Anlage dieses Eigenkapitals zum Habenzins.")}
+  </fieldset>
+  <fieldset><legend>Amortisation</legend>
+    ${feld("t_max", "Max. akzeptierte Dauer", "Jahre", "Vorgegebene Soll-Amortisationszeit für die Beurteilung der statischen und dynamischen Amortisationsrechnung.")}
+  </fieldset>
+  <fieldset><legend>Economic Value Added (EVA)</legend>
+    ${feld("steuer", "Ertragsteuersatz", "%", "Kapitalgesellschaften in Deutschland: ca. 30 % (KSt + SolZ + GewSt, je nach Hebesatz). Für öffentliche Hand / steuerbefreite Einrichtungen: 0 %.")}
+    <label class="radio"><input type="radio" name="wacc_modus" value="kalk" data-g data-k="wacc_modus"> WACC = Kalkulationszins</label>
+    <label class="radio"><input type="radio" name="wacc_modus" value="calc" data-g data-k="wacc_modus"> WACC berechnen aus Kapitalstruktur:</label>
+    <div id="waccFelder">
+      ${feld("ek_quote", "Eigenkapitalquote", "%", "Anteil Eigenkapital am Gesamtkapital.")}
+      ${feld("r_ek", "Eigenkapitalkosten r_EK", "%", "Renditeforderung der Eigenkapitalgeber (z. B. nach CAPM).")}
+      ${feld("r_fk", "Fremdkapitalzins r_FK", "%", "Durchschnittlicher Kreditzins (vor Steuern).")}
+    </div>
+    <div class="waccbox" id="waccAnzeige">WACC = –</div>
+  </fieldset>
+  <fieldset><legend>Sensitivitätsanalyse</legend>
+    ${feld("sens", "Variation der Parameter ±", "%", "Um wie viel Prozent jeder Parameter einzeln nach oben und unten verändert wird.")}
+  </fieldset>
+  <p class="hint">Eingaben mit Dezimalkomma oder -punkt; Tausenderpunkte sind erlaubt (z. B. 120.000). Prozentwerte als Zahl eingeben (6 = 6 %). Alle Beträge netto in €. Die Ergebnisse werden bei jeder Änderung sofort neu berechnet.</p>
+  </div>`;
+}
+
+function baueAlternative(k) {
+  return `<div class="pane" id="pane-${k}" role="tabpanel" hidden>
+  <div class="alt-head">
+    <label class="chk"><input type="checkbox" data-aktiv="${k}" ${k === 0 ? "checked disabled" : ""}> Alternative in Berechnung einbeziehen</label>
+    ${k > 0 ? `<button class="btn small" type="button" data-kopie="${k}">Werte von Alternative 1 kopieren</button>` : ""}
+  </div>
+  <div data-altbody="${k}">
+  <fieldset><legend>Investition</legend>
+    <div class="wide"><span><label for="a${k}_name">Bezeichnung</label></span><input type="text" id="a${k}_name" data-k="name" data-alt="${k}" data-text></div>
+    ${feld("A0", "Anschaffungsauszahlung", "€", "Anschaffungs-/Herstellungskosten inkl. Nebenkosten (Transport, Montage, Planung) in t = 0, netto. Beim Vergleich Einmalbetrag vs. Raten: der Einmalbetrag, auf den verzichtet wird.", k)}
+    ${feld("foerderung", "Förderung / Zuschuss", "€", "Investitionszuschüsse in t = 0 (z. B. BEG/BAFA, KfW-Tilgungszuschuss). Mindert die Nettoinvestition und damit auch Abschreibung und kalkulatorische Zinsen.", k)}
+    ${feld("n", "Nutzungsdauer n", "Jahre", "Wirtschaftliche Nutzungsdauer in ganzen Jahren (1–60).", k)}
+    <select class="preset" data-ndpreset="${k}" aria-label="Richtwert Nutzungsdauer">${ND_VORLAGEN.map(([l]) => `<option>${esc(l)}</option>`).join("")}</select>
+    ${feld("L", "Restwert / Liquidationserlös", "€", "Erlös aus dem Verkauf am Ende der Nutzungsdauer (abzüglich Abbruch-/Entsorgungskosten).", k)}
+    ${feld("WC", "Working Capital", "€", "Zusätzlich gebundenes Umlaufvermögen (Lager, Forderungen) in t = 0, wird am Ende wieder freigesetzt. Meist 0.", k)}
+  </fieldset>
+  <fieldset><legend>Laufende Zahlungen pro Jahr</legend>
+    <label class="radio"><input type="radio" name="modus${k}" value="abgeleitet" data-modus="${k}"> aus Menge, Preis und Kosten ableiten</label>
+    <label class="radio"><input type="radio" name="modus${k}" value="manuell" data-modus="${k}"> Zahlungsreihe je Jahr manuell eingeben</label>
+    <div class="wide" style="margin-top:8px"><span><label for="a${k}_einheit">Einheit der Menge</label></span><input type="text" id="a${k}_einheit" data-k="einheit" data-alt="${k}" data-text></div>
+    <div data-abgeleitet="${k}">
+    ${feld("x", "Menge / Leistung p.a.", "", "Produzierte/abgesetzte Menge oder Leistung pro Jahr (Stück, kWh, km, Fälle …). Bei Einsparinvestitionen: eingesparte Menge.", k)}
+    ${feld("p", "Preis / Erlös je Einheit", "€", "Verkaufspreis bzw. Wert/Einsparung je Einheit. 0 bei reiner Kostenbetrachtung.", k)}
+    ${feld("kv", "Variable Kosten je Einheit", "€", "Material, Energie, Verbrauchsstoffe, Fertigungslöhne je Einheit.", k)}
+    ${feld("kfix", "Fixe Betriebskosten p.a.", "€", "Personal, Wartung, Versicherung, Raumkosten u. Ä. – OHNE Abschreibung und Zinsen (diese berechnet das Programm selbst).", k)}
+    ${feld("g_e", "Steigerung Einzahlungen p.a.", "%", "Jährliche Preis-/Mengenänderung der Einzahlungen (z. B. Strompreissteigerung). Negativ z. B. bei Leistungsdegradation.", k)}
+    ${feld("g_a", "Steigerung Auszahlungen p.a.", "%", "Jährliche Steigerung der laufenden Kosten (Inflation, Energiepreise).", k)}
+    </div>
+    <div data-manuell="${k}" hidden>
+      <p class="hint" style="margin-top:4px">Ein- und Auszahlungen je Jahr ohne Investition, Restwert und Working Capital. Die Tabelle passt sich der Nutzungsdauer automatisch an. Monatliche Raten R bei Jahreszins i: Jahreswert = R · ((1+r)<sup>12</sup> − 1) / r mit r = (1+i)<sup>1/12</sup> − 1.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <button class="btn small" type="button" data-manfill="${k}">Aus „ableiten“-Werten vorbefüllen</button>
+        <button class="btn small" type="button" data-rate="${k}">Monatsrate umrechnen …</button>
+      </div>
+      <table class="mantab"><thead><tr><th>Jahr</th><th>Einzahlungen €</th><th>lfd. Auszahlungen €</th></tr></thead><tbody data-mantab="${k}"></tbody></table>
+    </div>
+  </fieldset>
+  </div></div>`;
+}
+
+function baueUI() {
+  // Verfahren
+  const sel = $("#methode"); let html = "", gruppe = null;
+  for (const k of REIHENFOLGE) {
+    const m = METHODEN[k];
+    if (m.gruppe !== gruppe) { if (gruppe !== null) html += "</optgroup>"; html += `<optgroup label="${esc(m.gruppe)}">`; gruppe = m.gruppe; }
+    html += `<option value="${k}">${esc(m.titel)}</option>`;
+  }
+  sel.innerHTML = html + "</optgroup>";
+  $("#vorlage").innerHTML = Object.keys(VORLAGEN).map(v => `<option>${esc(v)}</option>`).join("");
+  // Reiter
+  const tabs = [["g", "Allgemein"], [0, "Alternative 1"], [1, "Alternative 2"], [2, "Alternative 3"]];
+  $("#tabs").innerHTML = tabs.map(([id, l], j) => `<button class="tab" role="tab" type="button" data-tab="${id}" aria-selected="${j === 0}">${typeof id === "number" ? `<span class="dot" style="background:${PAL[id]}"></span>` : ""}${l}</button>`).join("");
+  $("#panes").innerHTML = baueAllgemein() + [0, 1, 2].map(baueAlternative).join("");
+}
+
+function zeigeTab(id) {
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === String(id))));
+  $$(".pane").forEach(p => p.hidden = p.id !== `pane-${id}`);
+}
+
+/* ---- Manuelle Tabelle ---- */
+function manZeilen(k) { return $$(`[data-mantab="${k}"] tr`).map(tr => $$("input", tr).map(i => i.value)); }
+function setzeManTabelle(k, werte) {
+  $(`[data-mantab="${k}"]`).innerHTML = werte.map(([e, a], t) =>
+    `<tr><td>${t + 1}</td><td><input type="text" inputmode="decimal" data-man="${k}" value="${esc(e)}" aria-label="Einzahlungen Jahr ${t + 1}"></td><td><input type="text" inputmode="decimal" data-man="${k}" value="${esc(a)}" aria-label="Auszahlungen Jahr ${t + 1}"></td></tr>`).join("");
+}
+function passeManTabelleAn(k) {
+  let n;
+  try { n = Math.round(parseNum($(`#a${k}_n`).value)); } catch { return; }
+  if (!(n >= 1 && n <= MAX_JAHRE)) return;
+  const alt = manZeilen(k);
+  if (alt.length === n) return;
+  const letzte = alt.length ? alt[alt.length - 1] : ["0", "0"];
+  setzeManTabelle(k, Array.from({length: n}, (_, t) => alt[t] || letzte));
+}
+function manAusAbgeleitet(k) {
+  try {
+    const a = leseAlt(k, "abgeleitet"), z = zahlungsreihe(a);
+    setzeManTabelle(k, Array.from({length: a.n}, (_, t) => [eingabeFmt(Math.round(z.E[t + 1] * 100) / 100), eingabeFmt(Math.round(z.Aus[t + 1] * 100) / 100)]));
+  } catch (err) { zeigeFehler([err.message]); }
+}
+function zeigeModus(k) {
+  const man = $(`[data-modus="${k}"][value="manuell"]`).checked;
+  $(`[data-abgeleitet="${k}"]`).hidden = man;
+  $(`[data-manuell="${k}"]`).hidden = !man;
+  if (man) { if (!manZeilen(k).length) manAusAbgeleitet(k); else passeManTabelleAn(k); }
+}
+function aktivAnzeigen() {
+  [0, 1, 2].forEach(k => {
+    const an = $(`[data-aktiv="${k}"]`).checked;
+    $(`[data-altbody="${k}"]`).classList.toggle("dim", !an);
+    $(`.tab[data-tab="${k}"]`).classList.toggle("off", !an);
+  });
+}
+
+/* ---- Einlesen ---- */
+function gv(k) { const el = $(`#g_${k}`); return el ? el.value : ""; }
+function leseParameter() {
+  const P = (k, n) => parseNum(gv(k), n) / 100;
+  const modus = ($('input[name="wacc_modus"]:checked') || {}).value || "kalk";
+  const g = {projekt: gv("projekt").trim() || "Investitionsprojekt", i: P("i", "Kalkulationszins"), r_re: P("r_re", "Reinvestitionszins"),
+    h: P("h", "Habenzins"), s_soll: P("s_soll", "Sollzins"), ek: parseNum(gv("ek"), "Eigenkapital"), t_max: parseNum(gv("t_max"), "Max. Dauer"),
+    steuer: P("steuer", "Steuersatz"), wacc_modus: modus, ek_quote: P("ek_quote", "EK-Quote"), r_ek: P("r_ek", "EK-Kosten"), r_fk: P("r_fk", "FK-Zins"), sens: P("sens", "Sensitivität")};
+  const f = [];
+  for (const [n, w] of [["Kalkulationszins", g.i], ["Reinvestitionszins", g.r_re], ["Habenzins", g.h], ["Sollzins", g.s_soll]]) if (w <= -1) f.push(`${n} muss größer als −100 % sein.`);
+  if (!(g.steuer >= 0 && g.steuer < 1)) f.push("Steuersatz muss zwischen 0 und 100 % liegen.");
+  if (!(g.ek_quote >= 0 && g.ek_quote <= 1)) f.push("Eigenkapitalquote muss zwischen 0 und 100 % liegen.");
+  if (!(g.sens > 0 && g.sens < 1)) f.push("Sensitivitäts-Variation muss zwischen 0 und 100 % liegen.");
+  if (wacc(g) <= -1) f.push("WACC muss größer als −100 % sein.");
+  if (g.ek < 0) f.push("Eigenkapital darf nicht negativ sein.");
+  if (f.length) throw new Error(f.join("\n"));
+  return g;
+}
+function leseAlt(k, modusOverride) {
+  const v = key => $(`#a${k}_${key}`).value;
+  const name = v("name").trim() || `Alternative ${k + 1}`;
+  const N = (key, lab) => parseNum(v(key), `${name}: ${lab}`);
+  const nW = N("n", "Nutzungsdauer");
+  if (Math.abs(nW - Math.round(nW)) > 1e-9) throw new Error(`${name}: Nutzungsdauer muss eine ganze Zahl sein.`);
+  const a = {name, A0: N("A0", "Anschaffungsauszahlung"), foerderung: N("foerderung", "Förderung"), n: Math.round(nW), L: N("L", "Restwert"), WC: N("WC", "Working Capital"),
+    einheit: v("einheit").trim() || "Einheiten", x: N("x", "Menge"), p: N("p", "Preis"), kv: N("kv", "variable Kosten"), kfix: N("kfix", "Fixkosten"),
+    g_e: N("g_e", "Steigerung Einzahlungen") / 100, g_a: N("g_a", "Steigerung Auszahlungen") / 100,
+    modus: modusOverride || ($(`[data-modus="${k}"]:checked`) || {}).value || "abgeleitet", man_E: [], man_A: []};
+  if (a.modus === "manuell") {
+    manZeilen(k).forEach(([e, x], t) => { a.man_E.push(parseNum(e, `${name}: Einzahlungen Jahr ${t + 1}`)); a.man_A.push(parseNum(x, `${name}: Auszahlungen Jahr ${t + 1}`)); });
+  }
+  return a;
+}
+function leseAlternativen() {
+  const alts = [], f = [];
+  for (const k of [0, 1, 2]) {
+    if (!$(`[data-aktiv="${k}"]`).checked) continue;
+    const a = leseAlt(k); f.push(...pruefe(a)); alts.push(a);
+  }
+  if (new Set(alts.map(a => a.name)).size !== alts.length) f.push("Die Alternativen benötigen unterschiedliche Bezeichnungen.");
+  if (f.length) throw new Error(f.join("\n"));
+  return alts;
+}
+
+/* ---- Zustand speichern/laden ---- */
+function zustand() {
+  const s = {version: 1, methode: $("#methode").value, alle: $("#alle").checked, g: {}, alts: []};
+  $$("[data-g][data-k]").forEach(el => { if (el.type === "radio") { if (el.checked) s.g[el.dataset.k] = el.value; } else s.g[el.dataset.k] = el.value; });
+  for (const k of [0, 1, 2]) {
+    const a = {aktiv: $(`[data-aktiv="${k}"]`).checked, modus: ($(`[data-modus="${k}"]:checked`) || {}).value || "abgeleitet", man: manZeilen(k)};
+    $$(`[data-alt="${k}"][data-k]`).forEach(el => a[el.dataset.k] = el.value);
+    s.alts.push(a);
+  }
+  return s;
+}
+function setzeZustand(s) {
+  if (!s || !s.g || !Array.isArray(s.alts)) throw new Error("Unbekanntes Dateiformat.");
+  for (const [k, v] of Object.entries(s.g)) {
+    if (k === "wacc_modus") { const r = $(`input[name="wacc_modus"][value="${v === "calc" ? "calc" : "kalk"}"]`); if (r) r.checked = true; }
+    else { const el = $(`#g_${k}`); if (el) el.value = v; }
+  }
+  s.alts.slice(0, 3).forEach((a, k) => {
+    for (const [key, v] of Object.entries(a)) { const el = $(`#a${k}_${key}`); if (el && el.dataset.k) el.value = v; }
+    $(`[data-aktiv="${k}"]`).checked = k === 0 ? true : !!a.aktiv;
+    const r = $(`[data-modus="${k}"][value="${a.modus === "manuell" ? "manuell" : "abgeleitet"}"]`); if (r) r.checked = true;
+    setzeManTabelle(k, Array.isArray(a.man) ? a.man : []);
+    zeigeModus(k);
+  });
+  if (s.methode && METHODEN[s.methode]) $("#methode").value = s.methode;
+  if (typeof s.alle === "boolean") $("#alle").checked = s.alle;
+  aktivAnzeigen(); waccAnzeigen();
+}
+function speichereLokal() { try { localStorage.setItem(SPEICHER_KEY, JSON.stringify(zustand())); } catch { /* z. B. privater Modus */ } }
+function ladeLokal() { try { const s = localStorage.getItem(SPEICHER_KEY); if (s) { setzeZustand(JSON.parse(s)); return true; } } catch { /* ignorieren */ } return false; }
+
+function ladeVorlage(name) {
+  const vl = VORLAGEN[name]; if (!vl) return;
+  for (const [k, w] of Object.entries(vl.glob)) {
+    if (k === "wacc_modus") $(`input[name="wacc_modus"][value="${w}"]`).checked = true;
+    else $(`#g_${k}`).value = k === "projekt" ? w : eingabeFmt(w);
+  }
+  [0, 1, 2].forEach(k => {
+    const daten = vl.alts[k] || _a({name: `Alternative ${k + 1}`});
+    $(`[data-aktiv="${k}"]`).checked = k === 0 || !!vl.alts[k];
+    for (const [key, w] of Object.entries(daten)) {
+      if (key === "modus" || key === "man") continue;
+      const el = $(`#a${k}_${key}`); if (!el) continue;
+      el.value = ["name", "einheit"].includes(key) ? w : key === "n" ? String(Math.round(w)) : eingabeFmt(w);
+    }
+    $(`[data-modus="${k}"][value="${daten.modus}"]`).checked = true;
+    setzeManTabelle(k, (daten.man || []).map(([e, a]) => [eingabeFmt(e), eingabeFmt(a)]));
+    zeigeModus(k);
+  });
+  aktivAnzeigen(); waccAnzeigen();
+}
+
+/* ---- Berechnen und Anzeigen ---- */
+let E = null, timer = null;
+function zeigeFehler(liste) {
+  const box = $("#fehler");
+  if (!liste || !liste.length) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.innerHTML = `<strong>Bitte Eingaben prüfen:</strong><ul>${liste.map(f => `<li>${esc(f)}</li>`).join("")}</ul>`;
+}
+function markiereFelder() {
+  $$("input[data-k]:not([data-text]):not([type=radio]), input[data-man]").forEach(el => {
+    let ok = true; try { parseNum(el.value); } catch { ok = false; }
+    el.classList.toggle("err", !ok);
+  });
+}
+function waccAnzeigen() {
+  const calc = ($('input[name="wacc_modus"]:checked') || {}).value === "calc";
+  $("#waccFelder").classList.toggle("dim", !calc);
+  try { $("#waccAnzeige").textContent = "WACC = " + pct(wacc(leseParameter())); } catch { $("#waccAnzeige").textContent = "WACC = –"; }
+}
+function berechnen() {
+  const key = $("#methode").value;
+  $("#beschr").textContent = BESCHREIBUNG[key];
+  markiereFelder();
+  try {
+    const g = leseParameter(), alts = leseAlternativen();
+    E = new Ergebnis(alts, g);
+  } catch (err) {
+    E = null; zeigeFehler(String(err.message).split("\n"));
+    $("#ausgabe").innerHTML = ""; return null;
+  }
+  zeigeFehler([]);
+  $("#ausgabe").innerHTML = berichtHTML(METHODEN[key].fn(E), E, {first: true});
+  return E;
+}
+function planeBerechnung() { clearTimeout(timer); timer = setTimeout(() => { berechnen(); speichereLokal(); }, 220); }
+
+/* ---- Export ---- */
+function dateiname(ext) {
+  const p = (E ? E.g.projekt : "Investition").replace(/[^\wäöüÄÖÜß\-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "Investition";
+  const d = new Date(), dd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `Investitionsrechnung_${p}_${dd}.${ext}`;
+}
+function download(name, inhalt, typ) {
+  const blob = new Blob([inhalt], {type: typ});
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function toast(t, ms = 3800) {
+  const el = document.createElement("div"); el.className = "toast"; el.textContent = t;
+  document.body.appendChild(el); setTimeout(() => el.remove(), ms);
+}
+const exportMethoden = () => $("#alle").checked ? REIHENFOLGE : [$("#methode").value];
+
+function exportTxt() {
+  if (!berechnen()) return;
+  const teile = [`${APP_TITEL} (v${VERSION})`, "", berichtText(bEingaben(E), E)];
+  for (const k of exportMethoden()) teile.push("", berichtText(METHODEN[k].fn(E), E));
+  teile.push("-".repeat(BREITE), wrapText("Hinweis: Alle Werte sind Modellrechnungen auf Basis der Eingaben (vor Steuern, außer EVA). Sie ersetzen keine steuerliche oder betriebswirtschaftliche Beratung."));
+  download(dateiname("txt"), "﻿" + teile.join("\n"), "text/plain;charset=utf-8");
+}
+
+function exportCsv() {
+  if (!berechnen()) return;
+  const e = E, g = e.g, rows = [], w = (...z) => rows.push(z);
+  w("Investitionsrechnung", g.projekt, e.erstellt.toLocaleString("de-DE"));
+  w();
+  w("ALLGEMEINE PARAMETER", "Wert", "Einheit");
+  [["Kalkulationszins", g.i * 100, "%"], ["Reinvestitionszins MIRR", g.r_re * 100, "%"], ["Habenzins", g.h * 100, "%"], ["Sollzins", g.s_soll * 100, "%"],
+    ["Eigenkapital VEW", g.ek, "€"], ["Max. Amortisationsdauer", g.t_max, "Jahre"], ["Ertragsteuersatz", g.steuer * 100, "%"], ["WACC", wacc(g) * 100, "%"],
+    ["Sensitivität +/-", g.sens * 100, "%"]].forEach(([l, v, u]) => w(l, csvn(v), u));
+  w();
+  w("EINGABEN", "Einheit", ...e.namen);
+  [["Anschaffungsauszahlung", "€", a => a.A0], ["Förderung", "€", a => a.foerderung], ["Nutzungsdauer", "Jahre", a => a.n], ["Restwert", "€", a => a.L],
+    ["Working Capital", "€", a => a.WC], ["Menge p.a.", "Einheiten", a => a.x], ["Preis je Einheit", "€", a => a.p], ["Var. Kosten je Einheit", "€", a => a.kv],
+    ["Fixkosten p.a.", "€", a => a.kfix], ["Steigerung Einzahlungen", "%", a => a.g_e * 100], ["Steigerung Auszahlungen", "%", a => a.g_a * 100]]
+    .forEach(([l, u, fn]) => w(l, u, ...e.alts.map(a => csvn(fn(a)))));
+  w("Zahlungsreihe", "", ...e.alts.map(a => a.modus));
+  w();
+  w("KENNZAHLEN", "Einheit", ...e.namen);
+  for (const [l, u, fn] of KENNZAHLEN) w(l, u, ...e.rs.map(r => { const v = fn(r); return csvn(u === "%" && !bad(v) ? v * 100 : v); }));
+  w();
+  w("ZAHLUNGSREIHEN", "Jahr", "Einzahlungen", "lfd. Auszahlungen bzw. Investition", "Restwert+WC", "Cashflow", "kum. Cashflow", "Abzinsfaktor", "Barwert", "kum. Barwert", "Vermögenskonto", "EVA");
+  for (const r of e.rs) for (let t = 0; t <= r.n; t++)
+    w(r.alt.name, t, csvn(r.z.E[t]), csvn(t ? r.z.Aus[t] : r.Ikap), csvn(r.z.R[t]), csvn(r.z.CF[t]), csvn(r.kum[t]), csvn(r.df[t], 8), csvn(r.pv[t]), csvn(r.kum_pv[t]), csvn(r.V[t]), t ? csvn(r.eva[t - 1]) : "");
+  w();
+  w("SENSITIVITÄT", "Parameter", "Basiswert", `NPV -${csvn(g.sens * 100, 0)}%`, `NPV +${csvn(g.sens * 100, 0)}%`, "kritischer Wert", "Änderung bis NPV=0 [%]");
+  e.alts.forEach((a, k) => e.sens[k].zeilen.forEach(z => {
+    const bw = z.key === "zins" ? z.basis * 100 : z.basis, kw = z.key === "zins" && z.krit !== null ? z.krit * 100 : z.krit;
+    w(a.name, z.label, csvn(bw), csvn(z.lo), csvn(z.hi), csvn(kw), z.fk !== null ? csvn((z.fk - 1) * 100) : "");
+  }));
+  const q = c => { const s = String(c ?? ""); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  download(dateiname("csv"), "﻿" + rows.map(z => z.map(q).join(";")).join("\r\n"), "text/csv;charset=utf-8");
+}
+
+function exportPdf() {
+  if (!berechnen()) return;
+  const e = E, keys = exportMethoden();
+  let h = `<div class="head"><h1>Investitionsrechnung – ${esc(e.g.projekt)}</h1><div class="sub">${esc(APP_TITEL)} · erstellt am ${esc(e.erstellt.toLocaleString("de-DE"))}</div></div>`;
+  h += berichtHTML(bEingaben(e), e, {first: true, druck: true});
+  for (const k of keys) h += berichtHTML(METHODEN[k].fn(e), e, {druck: true});
+  h += `<p class="grenzen" style="margin-top:8mm">Hinweis: Alle Werte sind Modellrechnungen auf Basis der Eingaben (vor Steuern, außer EVA). Sie ersetzen keine steuerliche oder betriebswirtschaftliche Beratung.</p>`;
+  $("#druck").innerHTML = h;
+  const altTitel = document.title;
+  document.title = dateiname("pdf").replace(/\.pdf$/, "");
+  document.body.classList.add("drucken");
+  const ende = () => { document.body.classList.remove("drucken"); $("#druck").innerHTML = ""; document.title = altTitel; window.removeEventListener("afterprint", ende); };
+  window.addEventListener("afterprint", ende);
+  toast("Im Druckdialog als Ziel „Als PDF speichern“ bzw. „Microsoft Print to PDF“ wählen.", 6000);
+  setTimeout(() => { window.print(); }, 60);
+}
+
+function rateUmrechnen(k) {
+  const eing = prompt("Monatliche Rate in € (Zahlung jeweils am Monatsende):", "500");
+  if (eing === null) return;
+  let R, i;
+  try { R = parseNum(eing, "Monatsrate"); i = parseNum(gv("i"), "Kalkulationszins") / 100; } catch (err) { zeigeFehler([err.message]); return; }
+  const rm = Math.pow(1 + i, 1 / 12) - 1;
+  const jw = Math.abs(rm) < 1e-12 ? 12 * R : R * (Math.pow(1 + rm, 12) - 1) / rm;
+  passeManTabelleAn(k);
+  $$(`[data-mantab="${k}"] tr`).forEach(tr => { $$("input", tr)[0].value = eingabeFmt(Math.round(jw * 100) / 100); });
+  toast(`${eur(R)} pro Monat entsprechen bei ${pct(i)} einem Jahreswert (Jahresende) von ${eur(jw)}.`);
+  planeBerechnung();
+}
+
+/* ---- Ereignisse ---- */
+function init() {
+  baueUI();
+  if (!ladeLokal()) ladeVorlage(Object.keys(VORLAGEN)[0]);
+  zeigeTab("g");
+  berechnen();
+
+  $("#tabs").addEventListener("click", ev => { const t = ev.target.closest(".tab"); if (t) zeigeTab(t.dataset.tab); });
+  $("#methode").addEventListener("change", () => { berechnen(); speichereLokal(); window.scrollTo({top: 0}); });
+  $("#alle").addEventListener("change", speichereLokal);
+  $("#btnVorlage").addEventListener("click", () => { ladeVorlage($("#vorlage").value); berechnen(); speichereLokal(); toast("Vorlage geladen."); });
+  $("#btnPdf").addEventListener("click", exportPdf);
+  $("#btnTxt").addEventListener("click", exportTxt);
+  $("#btnCsv").addEventListener("click", exportCsv);
+  $("#btnSave").addEventListener("click", () => download(dateiname("json"), JSON.stringify(zustand(), null, 2), "application/json"));
+  $("#btnLoad").addEventListener("click", () => $("#fileLoad").click());
+  $("#fileLoad").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { setzeZustand(JSON.parse(await f.text())); berechnen(); speichereLokal(); toast("Eingaben geladen."); }
+    catch (err) { zeigeFehler(["Datei konnte nicht gelesen werden: " + err.message]); }
+    ev.target.value = "";
+  });
+  const panes = $("#panes");
+  panes.addEventListener("input", ev => {
+    const el = ev.target;
+    if (el.dataset.k === "n" && el.dataset.alt !== undefined && $(`[data-modus="${el.dataset.alt}"][value="manuell"]`).checked) passeManTabelleAn(+el.dataset.alt);
+    if (el.dataset.g !== undefined) waccAnzeigen();
+    planeBerechnung();
+  });
+  panes.addEventListener("change", ev => {
+    const el = ev.target;
+    if (el.id === "zinsPreset") {
+      const w = ZINS_VORLAGEN[el.selectedIndex][1];
+      if (w !== null) { $("#g_i").value = eingabeFmt(w); $("#g_r_re").value = eingabeFmt(w); }
+      el.selectedIndex = 0; waccAnzeigen();
+    } else if (el.dataset.ndpreset !== undefined) {
+      const w = ND_VORLAGEN[el.selectedIndex][1], k = +el.dataset.ndpreset;
+      if (w !== null) { $(`#a${k}_n`).value = String(w); if ($(`[data-modus="${k}"][value="manuell"]`).checked) passeManTabelleAn(k); }
+      el.selectedIndex = 0;
+    } else if (el.dataset.modus !== undefined) zeigeModus(+el.dataset.modus);
+    else if (el.dataset.aktiv !== undefined) aktivAnzeigen();
+    else if (el.name === "wacc_modus") waccAnzeigen();
+    planeBerechnung();
+  });
+  panes.addEventListener("click", ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.kopie !== undefined) {
+      const k = +b.dataset.kopie;
+      $$(`[data-alt="0"][data-k]`).forEach(el => { $(`#a${k}_${el.dataset.k}`).value = el.value; });
+      $(`#a${k}_name`).value = $("#a0_name").value + " (Kopie)";
+      const m = ($('[data-modus="0"]:checked') || {}).value || "abgeleitet";
+      $(`[data-modus="${k}"][value="${m}"]`).checked = true;
+      setzeManTabelle(k, manZeilen(0));
+      $(`[data-aktiv="${k}"]`).checked = true;
+      zeigeModus(k); aktivAnzeigen(); planeBerechnung();
+    } else if (b.dataset.manfill !== undefined) { manAusAbgeleitet(+b.dataset.manfill); planeBerechnung(); }
+    else if (b.dataset.rate !== undefined) rateUmrechnen(+b.dataset.rate);
+  });
+}
+
+/* Testschnittstelle (für automatisierte Prüfungen) */
+window.__IR = {Ergebnis, analysiere, zahlungsreihe, npv, irrAlle, VORLAGEN, METHODEN, REIHENFOLGE, ladeVorlage, berechnen, bEingaben, berichtText, getE: () => E};
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
